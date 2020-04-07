@@ -4,7 +4,7 @@
 # Optional Dependency: Auxiliary vimrc/bashrc/bash_aliases accompanying files
 readonly SCRIPT_NAME='drconopoima_ubuntu_setup.sh'
 readonly SCRIPT_VERSION='0.9.0'
-readonly DEFAULT_PACKAGES='curl wget vim-gtk3 neovim bat'
+readonly DEFAULT_PACKAGES='curl wget vim-gtk3 neovim bat ufw git make build-essential default-jdk default-jre bleachbit vlc flatpak chromium-browser glances atop docker.io docker-compose golang libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python-openssl'
 packages=("${DEFAULT_PACKAGES}")
 
 script_name() {
