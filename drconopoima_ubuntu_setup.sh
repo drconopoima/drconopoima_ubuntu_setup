@@ -16,12 +16,21 @@ readonly -f script_name
 script_name
 
 # Check for root user
-if [[ ${EUID} -ne 0 ]]; then
+if [[ "${EUID}" -ne 0 ]]; then
     printf "ERROR: This script needs to run as root.\n"
     exit 1
 fi
 
-readonly DEFAULT_PACKAGES='curl wget vim-gtk3 neovim bat ufw gufw git make build-essential default-jdk default-jre bleachbit vlc flatpak chromium-browser glances atop docker.io docker-compose golang libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python-openssl virtualbox vagrant virtualbox-ext-pack krita ibus netcat-openbsd snapd libnotify-bin hwinfo tcpdump kubuntu-restricted-extras kubuntu-restricted-addons kubuntu-wallpapers gawk plasma-workspace-wallpapers fonts-opensymbol'
+readonly DEFAULT_PACKAGES="curl wget vim-gtk3 neovim bat ufw gufw make \
+build-essential default-jdk default-jre bleachbit vlc flatpak \
+chromium-browser glances atop docker.io docker-compose golang \
+libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl \
+llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev \
+python-openssl virtualbox vagrant virtualbox-ext-pack krita ibus \
+netcat-openbsd snapd libnotify-bin hwinfo tcpdump gawk fonts-opensymbol \
+kubuntu-restricted-extras kubuntu-restricted-addons kubuntu-wallpapers \
+plasma-workspace-wallpapers coreutils apt-file"
+
 packages=("${DEFAULT_PACKAGES}")
 
 usage_text() {
@@ -37,9 +46,12 @@ help_text() {
     printf "    --packages=<list> list of packages to install in quotation marks\n"
     printf "    --google-chrome: Install google-chrome\n"
     printf "    --vscode: Install Visual Studio Code\n"
-    printf "    --python-pip: Installs python-pip and python3-pip"
-    printf "    --local-python=<user>: Installs python and pip to local user. Implies --python-pip\n"
-    printf "    --remove-global-pip: Removes globally installed python-pip packages. Implies --python-pip\n"
+    printf "    --python-pip: Installs python-pip and python3-pip\n"
+    printf "    --local-pip=<user>: Installs pip locally to provided user. Implies --python-pip.\n"
+    printf "    --remove-global-pip: Removes globally installed python-pip packages. Implies --python-pip and --local-pip.\n"
+    printf "    --git: Installs git.\n"
+    printf "    --git-name: Sets up global user name for git config.\n"
+    printf "    --git-email: Sets up global user email for git config.\n"
 }
 
 readonly -f help_text
@@ -101,18 +113,44 @@ if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
                     shift # Remove --vscode= from processing
                     ;;
                 --python-pip)
-                    readonly PYTHON_PIP=1
+                    INSTALL_PYTHON_PIP=1
                     shift
                     ;;
-                --local-python=*)
-                    readonly LOCAL_PYTHON=1
-                    readonly PYTHON_USER="${argument#*=}"
+                --local-pip=*)
+                    INSTALL_PYTHON_PIP=1
+                    LOCAL_PIP=1
+                    PYTHON_USER="${argument#*=}"
                     shift # Remove --packages=* from processing
                     ;;
-                --local-python )
+                --local-pip )
                     shift
-                    readonly LOCAL_PYTHON=1
-                    readonly PYTHON_USER="$2"
+                    INSTALL_PYTHON_PIP=1
+                    LOCAL_PIP=1
+                    PYTHON_USER="$2"
+                    skip_argument=1
+                    ;;
+                --git )
+                    INSTALL_GIT=1
+                    shift
+                    ;;
+                --git-name=*)
+                    INSTALL_GIT=1
+                    GIT_USER_NAME="${argument#*=}"
+                    ;;
+                --git-name )
+                    shift
+                    INSTALL_GIT=1
+                    GIT_USER_NAME="$2"
+                    skip_argument=1
+                    ;;
+                --git-email=*)
+                    INSTALL_GIT=1
+                    GIT_USER_EMAIL="${argument#*=}"
+                    ;;
+                --git-email )
+                    shift
+                    INSTALL_GIT=1
+                    GIT_USER_EMAIL="$2"
                     skip_argument=1
                     ;;
                 *)
