@@ -1,11 +1,11 @@
-#!/bin/bash -eu
+#!/usr/bin/env bash
 # drconopoima_ubuntu_setup (v0.9.0)
 # Quick from scratch setup script of an Ubuntu machine
 # Optional Dependency: Auxiliary vimrc/bashrc/bash_aliases accompanying files
+set -eou pipefail
+
 readonly SCRIPT_NAME='drconopoima_ubuntu_setup.sh'
 readonly SCRIPT_VERSION='0.9.0'
-readonly DEFAULT_PACKAGES='curl wget vim-gtk3 neovim bat ufw git make build-essential default-jdk default-jre bleachbit vlc flatpak chromium-browser glances atop docker.io docker-compose golang libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python-openssl virtualbox vagrant virtualbox-ext-pack krita ibus'
-packages=("${DEFAULT_PACKAGES}")
 
 script_name() {
     printf "${SCRIPT_NAME}: (v${SCRIPT_VERSION})\n"
@@ -13,8 +13,19 @@ script_name() {
 
 readonly -f script_name
 
+script_name
+
+# Check for root user
+if [[ ${EUID} -ne 0 ]]; then
+    printf "ERROR: This script needs to run as root.\n"
+    exit 1
+fi
+
+readonly DEFAULT_PACKAGES='curl wget vim-gtk3 neovim bat ufw git make build-essential default-jdk default-jre bleachbit vlc flatpak chromium-browser glances atop docker.io docker-compose golang libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev python-openssl virtualbox vagrant virtualbox-ext-pack krita ibus netcat-openbsd snapd libnotify-bin hwinfo tcpdump'
+packages=("${DEFAULT_PACKAGES}")
+
 usage_text() {
-    printf "Usage: ${SCRIPT_NAME} ubuntu_version [--packages=*][--optional-flags: --google-chrome|--vscode]\n"
+    printf "Usage: ${SCRIPT_NAME} <ubuntu_version> [--packages=*][--optional-flags: --google-chrome|--vscode]\n"
     printf "Example: ${SCRIPT_NAME} 20.04 --packages='neovim python-pip python3-pip'\n"
 }
 
@@ -32,8 +43,6 @@ help_text() {
 }
 
 readonly -f help_text
-
-script_name
 
 readonly NUMBER_OF_ARGUMENTS=$#
 
