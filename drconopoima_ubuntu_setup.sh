@@ -226,11 +226,17 @@ fi
 
 apt-get update
 
-apt-get upgrade -y
+apt-get full-upgrade -y
 
 DEBIAN_FRONTEND=noninteractive apt-get install -y ${packages_to_install[@]}
 
-DEBIAN_FRONTEND=noninteractive apt-get remove -y ${packages_to_remove[@]}
+if [[ ! -z GIT_USER_NAME ]]; then
+    git config --global user.name "${GIT_USER_NAME}"
+fi
+
+if [[ ! -z GIT_USER_EMAIL ]]; then
+    git config --global user.email "${GIT_USER_EMAIL}"
+fi
 
 if [[ ! -z ${INSTALL_UFW+x} ]]; then
     ufw --force reset
@@ -245,3 +251,4 @@ if [[ ! -z ${INSTALL_UFW+x} ]]; then
     ufw --force enable
 fi
 
+DEBIAN_FRONTEND=noninteractive apt-get remove -y ${packages_to_remove[@]}
