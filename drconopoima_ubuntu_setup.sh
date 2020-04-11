@@ -30,7 +30,7 @@ python-openssl virtualbox vagrant virtualbox-ext-pack krita ibus \
 netcat-openbsd snapd libnotify-bin hwinfo tcpdump gawk fonts-opensymbol \
 kubuntu-restricted-extras kubuntu-restricted-addons kubuntu-wallpapers \
 plasma-workspace-wallpapers coreutils apt-file telnet openssh-client \
-openssh-server"
+openssh-server gpg"
 
 DEFAULT_PACKAGES_TO_REMOVE="gstreamer1.0-fluendo-mp3 telnetd"
 
@@ -149,7 +149,7 @@ if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
                     REMOVE_GLOBAL_PIP=1
                     shift
                     ;;
-                --git )
+                --git)
                     INSTALL_GIT=1
                     shift
                     ;;
@@ -224,6 +224,14 @@ if [[ ! -z ${INSTALL_UFW+x} ]]; then
     packages_to_install+=('ufw')
 fi
 
+if [[ ! -z ${GOOGLE_CHROME+x} ]]; then
+    packages_to_install+=('curl')
+fi
+
+if [[ ! -z ${VSCODE+x} ]]; then
+    packages_to_install+=('curl coreutils apt-transport-https')
+fi
+
 apt-get update
 
 apt-get full-upgrade -y
@@ -249,6 +257,21 @@ if [[ ! -z ${INSTALL_UFW+x} ]]; then
     ufw --force allow from 127.0.0.1 to 127.0.0.1 port 5432 proto tcp
     ufw --force disable
     ufw --force enable
+fi
+
+if [[ ! -z ${GOOGLE_CHROME+x} ]]; then
+    TEMP_GOOGLE_CHROME_DEB="$(mktemp).deb" &&
+    curl -qo "${TEMP_GOOGLE_CHROME_DEB}" 'https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb' &&
+    apt install -y "${TEMP_GOOGLE_CHROME_DEB}"
+    rm -f "${TEMP_GOOGLE_CHROME_DEB}"
+fi
+
+if [[ ! -z ${VSCODE+x} ]]; then
+    curl -q https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+    install -o root -g root -m 644 packages.microsoft.gpg /usr/share/keyrings/
+    sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list'
+    apt update
+    apt install -y vscode
 fi
 
 DEBIAN_FRONTEND=noninteractive apt-get remove -y ${packages_to_remove[@]}
