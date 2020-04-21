@@ -260,7 +260,7 @@ if [[ ! -z ${GIT_USER_EMAIL+x} ]]; then
     git config --global user.email "${GIT_USER_EMAIL}"
 fi
 
-readonly ufwsectionlockfile='ufw.lock';
+readonly ufwsectionlockfile='.~lock.ufw';
 if [[ ! -z ${INSTALL_UFW+x} ]]; then
     if ( set -o noclobber; echo "$$" > "$ufwsectionlockfile") 2> /dev/null; 
     then
@@ -269,15 +269,15 @@ if [[ ! -z ${INSTALL_UFW+x} ]]; then
         ufw default block incoming
         ufw default allow outgoing
         # SSH
-        ufw allow to 127.0.0.1 port 22 from 127.0.0.1
+        ufw allow to 0.0.0.0 port 22 from 127.0.0.1
         # HTTP
-        ufw allow to 127.0.0.1 port 80 from 127.0.0.1
+        ufw allow to 0.0.0.0 port 80 from 127.0.0.1
         # HTTPS
-        ufw allow to 127.0.0.1 port 443 from 127.0.0.1
+        ufw allow to 0.0.0.0 port 443 from 127.0.0.1
         # MySQL
-        ufw allow to 127.0.0.1 port 3306 from 127.0.0.1
+        ufw allow to 0.0.0.0 port 3306 from 127.0.0.1
         # PostgreSQL
-        ufw allow to 127.0.0.1 port 5432 from 127.0.0.1
+        ufw allow to 0.0.0.0 port 5432 from 127.0.0.1
         ufw --force disable
         ufw --force enable
         rm -f "$ufwsectionlockfile"
