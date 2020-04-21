@@ -2,7 +2,17 @@
 # drconopoima_ubuntu_setup (v0.9.0)
 # Quick from scratch setup script of an Ubuntu machine
 # Optional Dependency: Auxiliary vimrc/bashrc/bash_aliases accompanying files
-set -euo pipefail
+set -Eeuo pipefail
+# Sourced from `man bash`
+# set -E | set -o errtrace:  If set, any trap on ERR is inherited by shell functions
+# set -u | set -o nounset: Treat unset variables and parameters (except "@" and "*") as an  error  when performing parameter expansion.
+# set -e | set -o errexit: Exit immediately if a pipeline, a list, or  a  compound  command, exits with a non-zero status.
+# set -o pipefail: If set, the return value of a pipeline is the value of the last command to exit with a non-zero status, or zero if all exit successfully.
+# set -C | set -o noclubber: If set, bash does not overwrite an existing file with the >, >&,  and  <>  redirection operators. Overriden by >|
+# set -n | set -o noexec: Read  commands  but do not execute them. This may be used to check for syntax errors
+
+# Additional ideas on bash scripting robustness by David Phasley here: https://www.davidpashley.com/articles/writing-robust-shell-scripts/
+
 
 readonly SCRIPT_NAME='drconopoima_ubuntu_setup.sh'
 readonly SCRIPT_VERSION='0.9.0'
@@ -246,24 +256,39 @@ if [[ ! -z GIT_USER_EMAIL ]]; then
     git config --global user.email "${GIT_USER_EMAIL}"
 fi
 
+readonly ufwsectionlockfile='ufw.lock';
 if [[ ! -z ${INSTALL_UFW+x} ]]; then
-    ufw --force reset
-    ufw --force default block incoming
-    ufw --force default allow outgoing
-    ufw --force allow from 127.0.0.1 to 127.0.0.1 port 22 proto tcp
-    ufw --force allow from 127.0.0.1 to 127.0.0.1 port 80 proto tcp
-    ufw --force allow from 127.0.0.1 to 127.0.0.1 port 443 proto tcp
-    ufw --force allow from 127.0.0.1 to 127.0.0.1 port 3306 proto tcp
-    ufw --force allow from 127.0.0.1 to 127.0.0.1 port 5432 proto tcp
-    ufw --force disable
-    ufw --force enable
+    if ( set -o noclobber; echo "$$" > "$ufwsectionlockfile") 2> /dev/null; 
+    then
+        trap 'rm -f "$ufwsectionlockfile"; exit $?' INT TERM EXIT
+        ufw --force reset
+        ufw default block incoming
+        ufw default allow outgoing
+        # SSH
+        ufw allow to 127.0.0.1 port 22 from 127.0.0.1
+        # HTTP
+        ufw allow to 127.0.0.1 port 80 from 127.0.0.1
+        # HTTPS
+        ufw allow to 127.0.0.1 port 443 from 127.0.0.1
+        # MySQL
+        ufw allow to 127.0.0.1 port 3306 from 127.0.0.1
+        # PostgreSQL
+        ufw allow to 127.0.0.1 port 5432 from 127.0.0.1
+        ufw --force disable
+        ufw --force enable
+        rm -f "$ufwsectionlockfile"
+        trap - INT TERM EXIT
+    else
+        echo "Failed to acquire lockfile: $ufwsectionlockfile." 
+        echo "Held by $(cat $ufwsectionlockfile)"
+    fi
 fi
 
 if [[ ! -z ${GOOGLE_CHROME+x} ]]; then
     TEMP_GOOGLE_CHROME_DEB="$(mktemp).deb" &&
     curl -qo "${TEMP_GOOGLE_CHROME_DEB}" 'https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb' &&
     apt install -y "${TEMP_GOOGLE_CHROME_DEB}"
-    rm -f "${TEMP_GOOGLE_CHROME_DEB}"
+    rm -f "${TEMP_GOOGLE_CHROME_DEB}" # Program defensively: rm does not errexit and continues if file doesn't exist.
 fi
 
 if [[ ! -z ${VSCODE+x} ]]; then
@@ -275,3 +300,10 @@ if [[ ! -z ${VSCODE+x} ]]; then
 fi
 
 DEBIAN_FRONTEND=noninteractive apt-get remove -y ${packages_to_remove[@]}
+
+## Apache Example: batch apply atomic changes in directory
+# cp -a /var/www /var/www-tmp
+# find /var/www-tmp -type f -name "*.html" -print0 | xargs -0 perl -pi -e 's/.conf/.com/'
+# mv /var/www /var/www-old
+# mv /var/www-tmp /var/www
+# Apache opens the files on every request, otherwise processes should be restarted to apply changes
