@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env rbash
 # drconopoima_ubuntu_setup (v0.9.0)
 # Quick from scratch setup script of an Ubuntu machine
 # Optional Dependency: Auxiliary vimrc/bashrc/bash_aliases accompanying files
@@ -9,9 +9,13 @@ set -Eeuo pipefail
 # set -e | set -o errexit: Exit immediately if a pipeline, a list, or  a  compound  command, exits with a non-zero status.
 # set -o pipefail: If set, the return value of a pipeline is the value of the last command to exit with a non-zero status, or zero if all exit successfully.
 # set -C | set -o noclubber: If set, bash does not overwrite an existing file with the >, >&,  and  <>  redirection operators. Overriden by >|
+# Debugging flags:
 # set -n | set -o noexec: Read  commands  but do not execute them. This may be used to check for syntax errors
+# set -x | set -o xtrace: After  expanding  each command, display the value of PS4, followed by the command and its expanded arguments
 
-# Additional ideas on bash scripting robustness by David Phasley here: https://www.davidpashley.com/articles/writing-robust-shell-scripts/
+# Additional ideas on bash scripting robustness:
+# * David Phasley: https://www.davidpashley.com/articles/writing-robust-shell-scripts/
+# * Tom Van Eyck: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 
 
 readonly SCRIPT_NAME='drconopoima_ubuntu_setup.sh'
@@ -248,11 +252,11 @@ apt-get full-upgrade -y
 
 DEBIAN_FRONTEND=noninteractive apt-get install -y ${packages_to_install[@]}
 
-if [[ ! -z GIT_USER_NAME ]]; then
+if [[ ! -z ${GIT_USER_NAME+x} ]]; then
     git config --global user.name "${GIT_USER_NAME}"
 fi
 
-if [[ ! -z GIT_USER_EMAIL ]]; then
+if [[ ! -z ${GIT_USER_EMAIL+x} ]]; then
     git config --global user.email "${GIT_USER_EMAIL}"
 fi
 
