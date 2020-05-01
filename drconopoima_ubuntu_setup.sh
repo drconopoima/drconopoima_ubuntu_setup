@@ -1,4 +1,4 @@
-#!/usr/bin/env rbash
+#!/usr/bin/env bash
 # drconopoima_ubuntu_setup (v0.9.0)
 # Quick from scratch setup script of an Ubuntu machine
 # Optional Dependency: Auxiliary vimrc/bashrc/bash_aliases accompanying files
@@ -53,8 +53,8 @@ packages_to_install=("${DEFAULT_PACKAGES_TO_INSTALL}")
 packages_to_remove=("${DEFAULT_PACKAGES_TO_REMOVE}")
 
 usage_text() {
-    printf "Usage: ${SCRIPT_NAME} <ubuntu_version> [--packages=*][--optional-flags: --google-chrome|--vscode]\n"
-    printf "Example: ${SCRIPT_NAME} 20.04 --packages='neovim golang bleachbit'\n"
+    printf "Usage: ${SCRIPT_NAME} <ubuntu_version> --user <username> [--packages=*][--optional-flags: --google-chrome|--vscode]\n"
+    printf "Example: ${SCRIPT_NAME} 20.04  --user <username> --packages='neovim golang bleachbit'\n"
 }
 
 readonly -f usage_text
@@ -74,6 +74,7 @@ help_text() {
     printf "    --clean-packages: List of packages to remove on top of default clean-up packages.\n"
     printf "    --extra-packages: List of additional packages to install on top of default packages.\n"
     printf "    --ufw: Install UFW firewall and set up the following default rules: deny incoming, allow outgoing, allow localhost 22, 3306 (mysql), 5432 (postgresql), 80 (http), 443 (https).\n"
+    printf "    --user: Select user for configuration\n"
 }
 
 readonly -f help_text
@@ -206,6 +207,14 @@ if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
                     INSTALL_UFW=1
                     shift
                     ;;
+                --user=*)
+                    USERNAME="${argument#*=}"
+                    shift
+                    ;;
+                --user)
+                    shift
+                    USERNAME="$2"
+                    skip_argument=1
                 *)
                     echo "Error: unrecognized option ${argument#*=}"
                     exit 1
@@ -217,6 +226,8 @@ if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
         fi
     done
 fi
+
+HOMEDIR_USER="$(getent passwd $USERNAME | awk -F ':' '{print $6}')"
 
 for constant in ${CONSTANTS[@]}; do
     readonly ${constant}
@@ -262,7 +273,7 @@ if [[ ! -z ${GIT_USER_EMAIL+x} ]]; then
     git config --global user.email "${GIT_USER_EMAIL}"
 fi
 
-readonly ufwsectionlockfile='.~lock.ufw';
+readonly ufwsectionlockfile='/var/lock/drconopoima_ubuntu_setup_ufw_install_section.lock';
 if [[ ! -z ${INSTALL_UFW+x} ]]; then
     if ( set -o noclobber; echo "$$" > "$ufwsectionlockfile") 2> /dev/null; 
     then
@@ -306,6 +317,24 @@ if [[ ! -z ${VSCODE+x} ]]; then
 fi
 
 DEBIAN_FRONTEND=noninteractive apt-get remove -y ${packages_to_remove[@]}
+
+### setxkbmap
+## Check current options
+# setxkbmap -query
+## Undo any previous options (pass empty argument list). Source https://unix.stackexchange.com/questions/229555/how-do-i-unset-an-option-in-xkbmap
+sudo -u $USERNAME /bin/bash -c "PATH='/usr/bin:$PATH'; setxkbmap -option "
+## Set scroll lock as compose key
+# list of key values here: https://gist.github.com/jatcwang/ae3b7019f219b8cdc6798329108c9aee
+# list of pnemonic key combinations in: /usr/share/X11/locale/en_US.UTF-8/Compose
+# or here: https://cgit.freedesktop.org/xorg/lib/libX11/tree/nls/en_US.UTF-8/Compose.pre
+# Source with short explanation here: https://superuser.com/questions/74763/how-to-type-unicode-characters-in-kde/78724#78724
+# Source with longer explanation here: http://canonical.org/~kragen/setting-up-keyboard.html 
+# Useful XCompose GitHub here: https://github.com/kragen/XCompose
+sudo -u $USERNAME /bin/bash -c "PATH='/usr/bin:$PATH'; setxkbmap -option compose:rctrl"
+echo "# This file defines custom Compose sequences for Unicode characters" > "${HOMEDIR_USER}/.XCompose"
+echo "# Import default rules from the system Compose file:" >> "${HOMEDIR_USER}/.XCompose"
+echo "include \"/usr/share/X11/locale/es_ES.UTF-8/Compose\"" >> "${HOMEDIR_USER}/.XCompose"
+chown $USERNAME:$USERNAME "${HOMEDIR_USER}/.XCompose"
 
 ## Apache Example: batch apply atomic changes in directory
 # cp -a /var/www /var/www-tmp
