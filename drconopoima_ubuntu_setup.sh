@@ -38,7 +38,7 @@ fi
 readonly DEFAULT_PACKAGES_TO_INSTALL="curl wget vim-gtk3 neovim bat ufw git make \
 build-essential default-jdk default-jre bleachbit vlc flatpak \
 chromium-browser glances atop docker.io docker-compose golang \
-libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl \
+libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev \
 llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev \
 python-openssl virtualbox vagrant virtualbox-ext-pack krita ibus \
 netcat-openbsd snapd libnotify-bin hwinfo tcpdump gawk fonts-opensymbol \
