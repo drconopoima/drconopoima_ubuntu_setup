@@ -18,7 +18,7 @@ set -Eeuo pipefail
 # * Tom Van Eyck: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 
 
-readonly SCRIPT_NAME='drconopoima_ubuntu_setup.sh'
+readonly SCRIPT_NAME="$0"
 readonly SCRIPT_VERSION='0.9.0'
 
 script_name() {
@@ -105,7 +105,7 @@ done
 
 readonly REST_ARGUMENTS=("${ALL_ARGUMENTS[@]:1}")
 
-CONSTANTS=('GOOGLE_CHROME' 'VSCODE' 'INSTALL_PYTHON_PIP' 'LOCAL_PIP' 'PYTHON_USER' 'INSTALL_GIT' 'GIT_USER_NAME' 'GIT_USER_EMAIL' 'REMOVE_GLOBAL_PIP' 'INSTALL_UFW')
+CONSTANTS=('GOOGLE_CHROME' 'VSCODE' 'INSTALL_PYTHON_PIP' 'LOCAL_PIP' 'PYTHON_USER' 'INSTALL_GIT' 'GIT_USER_NAME' 'GIT_USER_EMAIL' 'REMOVE_GLOBAL_PIP' 'INSTALL_UFW' 'NEW_SSH_PORT' 'VALIDATE_SSH_PORT')
 
 skip_argument=0
 if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
@@ -202,6 +202,17 @@ if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
                     done
                     skip_argument=1
                     ;;
+                --ssh-port=*)
+                    NEW_SSH_PORT="${argument#*=}"
+                    VALIDATE_SSH_PORT=1
+                    shift
+                    ;;
+                --ssh-port)
+                    shift
+                    NEW_SSH_PORT="$2"
+                    VALIDATE_SSH_PORT=1
+                    skip_argument=1
+                    ;;
                 --ufw)
                     INSTALL_UFW=1
                     shift
@@ -222,27 +233,39 @@ for constant in ${CONSTANTS[@]}; do
     readonly ${constant}
 done
 
-if [[ ! -z ${INSTALL_PYTHON_PIP+x} ]]; then
+if [[ -n ${VALIDATE_SSH_PORT+x} ]]; then
+    number_regex='^[0-9]+$'
+    if ! [[ $NEW_SSH_PORT =~ $number_regex ]]; then
+    # Binary operator =~: the string to the right of the operator is a regular expression and  matched. The return value is 0 if the string matches the pattern, and 1 otherwise. If the regular expression is syntactically incorrect, the return value is 2. Same precedence as == and !=.
+        echo "Warning: Input Error. New SSH port value '$NEW_SSH_PORT' is not numeric. Skipping changes to SSH port configuration." >&2;
+    elif [[ $NEW_SSH_PORT -eq 22 || ( $NEW_SSH_PORT -gt 1024 && $NEW_SSH_PORT -lt 65535 ) ]]; then
+        readonly CHANGE_SSH_PORT=1; 
+    else
+        echo "Warning: Input Error. New SSH port value '$NEW_SSH_PORT' is outside of valid range for SSH ports: 22,1025~65534. Skipping changes to SSH port configuration." >&2;
+    fi
+fi
+
+if [[ -n ${INSTALL_PYTHON_PIP+x} ]]; then
     packages_to_install+=('python-pip' 'python3-pip')
 fi
 
-if [[ ! -z ${INSTALL_PYTHON_PIP+x} ]]; then
+if [[ -n ${INSTALL_PYTHON_PIP+x} ]]; then
     packages_to_install+=('git')
 fi
 
-if [[ ! -z ${REMOVE_GLOBAL_PIP+x} ]]; then
+if [[ -n ${REMOVE_GLOBAL_PIP+x} ]]; then
     packages_to_remove+=('python-pip' 'python3-pip')
 fi
 
-if [[ ! -z ${INSTALL_UFW+x} ]]; then
+if [[ -n ${INSTALL_UFW+x} ]]; then
     packages_to_install+=('ufw')
 fi
 
-if [[ ! -z ${GOOGLE_CHROME+x} ]]; then
+if [[ -n ${GOOGLE_CHROME+x} ]]; then
     packages_to_install+=('curl')
 fi
 
-if [[ ! -z ${VSCODE+x} ]]; then
+if [[ -n ${VSCODE+x} ]]; then
     packages_to_install+=('curl coreutils apt-transport-https')
 fi
 
@@ -252,24 +275,49 @@ apt-get full-upgrade -y
 
 DEBIAN_FRONTEND=noninteractive apt-get install -y ${packages_to_install[@]}
 
-if [[ ! -z ${GIT_USER_NAME+x} ]]; then
+if [[ -n ${GIT_USER_NAME+x} ]]; then
     git config --global user.name "${GIT_USER_NAME}"
 fi
 
-if [[ ! -z ${GIT_USER_EMAIL+x} ]]; then
+if [[ -n ${GIT_USER_EMAIL+x} ]]; then
     git config --global user.email "${GIT_USER_EMAIL}"
 fi
 
-readonly ufwsectionlockfile='.~lock.ufw';
-if [[ ! -z ${INSTALL_UFW+x} ]]; then
-    if ( set -o noclobber; echo "$$" > "$ufwsectionlockfile") 2> /dev/null; 
-    then
-        trap 'rm -f "$ufwsectionlockfile"; exit $?' INT TERM EXIT
+readonly SSHD_CONFIG_FILE="/etc/ssh/sshd_config"
+if [[ -e $SSHD_CONFIG_FILE ]]; then
+    GREP_SSH_PORT_CONFIG=$(grep -E "^[[:space:]]*Port([[:space:]]*|[=]?)" $SSHD_CONFIG_FILE | awk '{$1=$1;print}');
+    readonly GREP_SSH_PORT_CONFIG
+    if [[ -z ${GREP_SSH_PORT_CONFIG+x} ]]; then
+        current_ssh_port=22;
+    elif [[ -z "${GREP_SSH_PORT_CONFIG##*'='*}" ]]; then
+        # if configuration is set up with equal sign, e.g. Port=22
+        current_ssh_port=$(echo "$GREP_SSH_PORT_CONFIG"| cut -d"=" -f2 | awk '{$1=$1;print}')
+    else
+        current_ssh_port=$(echo "$GREP_SSH_PORT_CONFIG"| awk '{print $2}')
+    fi
+fi
+
+if [[ -n ${CHANGE_SSH_PORT+x} ]]; then
+    if [[ -e $SSHD_CONFIG_FILE ]]; then
+        :
+    else
+        echo "Warning: System Error. Could not find SSHD configuration file at '$SSHD_CONFIG_FILE'. Skipping changes to SSH port configuration." >&2;
+    fi
+fi
+
+readonly ufwsectionlockfile="/var/lock/$SCRIPT_NAME.ufw.lock";
+if [[ -n ${INSTALL_UFW+x} ]]; then
+    if ( set -o noclobber; echo "$$" > "$ufwsectionlockfile") 2> /dev/null; then
+        trap "rm -f '$ufwsectionlockfile'; exit $?" INT TERM EXIT
         ufw --force reset
         ufw default block incoming
         ufw default allow outgoing
         # SSH
-        ufw allow to 0.0.0.0 port 22 from 127.0.0.1
+        if [[ -n ${current_ssh_port+x} ]]; then
+            ufw allow to 0.0.0.0 port ${current_ssh_port} from 127.0.0.1
+        else
+            ufw allow to 0.0.0.0 port 22 from 127.0.0.1
+        fi
         # HTTP
         ufw allow to 0.0.0.0 port 80 from 127.0.0.1
         # HTTPS
@@ -280,22 +328,23 @@ if [[ ! -z ${INSTALL_UFW+x} ]]; then
         ufw allow to 0.0.0.0 port 5432 from 127.0.0.1
         ufw --force disable
         ufw --force enable
-        rm -f "$ufwsectionlockfile"
+        rm -f $ufwsectionlockfile
         trap - INT TERM EXIT
     else
-        echo "Failed to acquire lockfile: $ufwsectionlockfile." 
-        echo "Held by $(cat $ufwsectionlockfile)"
+        echo "Failed to acquire lockfile: Held by $ufwsectionlockfile." 
     fi
 fi
 
-if [[ ! -z ${GOOGLE_CHROME+x} ]]; then
-    TEMP_GOOGLE_CHROME_DEB="$(mktemp).deb" &&
+if [[ -n ${GOOGLE_CHROME+x} ]]; then
+    TEMP_GOOGLE_CHROME_DEB="$(mktemp).deb"
+    trap "rm -f '$TEMP_GOOGLE_CHROME_DEB'; exit $?" INT TERM EXIT
     curl -qo "${TEMP_GOOGLE_CHROME_DEB}" 'https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb' &&
-    apt install -y "${TEMP_GOOGLE_CHROME_DEB}"
-    rm -f "${TEMP_GOOGLE_CHROME_DEB}" # Program defensively: rm does not errexit and continues if file doesn't exist.
+    apt install -y "${TEMP_GOOGLE_CHROME_DEB}" &&
+    rm -f $TEMP_GOOGLE_CHROME_DEB
+    trap - INT TERM EXIT
 fi
 
-if [[ ! -z ${VSCODE+x} ]]; then
+if [[ -n ${VSCODE+x} ]]; then
     curl -q https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
     install -o root -g root -m 644 packages.microsoft.gpg /usr/share/keyrings/
     sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list'
