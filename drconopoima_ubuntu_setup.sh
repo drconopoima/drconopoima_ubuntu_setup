@@ -300,6 +300,19 @@ fi
 readonly SSHD_CONFIG_FILE="/etc/ssh/sshd_config"
 if [[ -e $SSHD_CONFIG_FILE ]]; then
     GREP_SSH_PORT_CONFIG=$(grep -E "^[[:space:]]*Port([[:space:]]*|[=]?)" $SSHD_CONFIG_FILE | awk '{$1=$1;print}');
+    ## GNU/POSIX extensions to regular expressions. Source: Chapter 3 `sed` FAQ. http://sed.sourceforge.net/sedfaq3.html
+    # [[:alnum:]]  - [A-Za-z0-9]     Alphanumeric characters
+    # [[:alpha:]]  - [A-Za-z]        Alphabetic characters
+    # [[:blank:]]  - [ \x09]         Space or tab characters only
+    # [[:cntrl:]]  - [\x00-\x19\x7F] Control characters
+    # [[:digit:]]  - [0-9]           Numeric characters
+    # [[:graph:]]  - [!-~]           Printable and visible characters
+    # [[:lower:]]  - [a-z]           Lower-case alphabetic characters
+    # [[:print:]]  - [ -~]           Printable (non-Control) characters
+    # [[:punct:]]  - [!-/:-@[-`{-~]  Punctuation characters
+    # [[:space:]]  - [ \t\v\f]       All whitespace chars
+    # [[:upper:]]  - [A-Z]           Upper-case alphabetic characters
+    # [[:xdigit:]] - [0-9a-fA-F]     Hexadecimal digit characters
     readonly GREP_SSH_PORT_CONFIG
     if [[ -z ${GREP_SSH_PORT_CONFIG+x} ]]; then
         current_ssh_port=22;
