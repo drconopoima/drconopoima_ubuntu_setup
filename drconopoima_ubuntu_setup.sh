@@ -45,7 +45,7 @@ netcat-openbsd snapd libnotify-bin hwinfo tcpdump gawk fonts-opensymbol \
 kubuntu-restricted-extras kubuntu-restricted-addons kubuntu-wallpapers \
 plasma-workspace-wallpapers coreutils apt-file telnet openssh-client \
 openssh-server gpg net-tools exfat-fuse exfat-utils jq tmux maven sqlite3 \
-lsof colormake most calibre nocache"
+lsof colormake most calibre nocache jpegoptim mmv qpdf"
 
 DEFAULT_PACKAGES_TO_REMOVE="gstreamer1.0-fluendo-mp3 telnetd"
 
