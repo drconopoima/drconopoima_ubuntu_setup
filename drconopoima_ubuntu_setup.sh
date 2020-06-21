@@ -48,6 +48,9 @@ openssh-server gpg net-tools exfat-fuse exfat-utils jq tmux maven sqlite3 \
 lsof colormake most calibre nocache jpegoptim mmv qpdf rename pgadmin3 postgresql \
 asciinema fail2ban dsniff"
 
+readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="helm"
+readonly DEFAULT_SNAP_PACKAGES_INSTALL="libreoffice"
+
 DEFAULT_PACKAGES_TO_REMOVE="gstreamer1.0-fluendo-mp3 telnetd"
 
 packages_to_install=("${DEFAULT_PACKAGES_TO_INSTALL}")
@@ -342,18 +345,24 @@ if [[ -n ${INSTALL_UFW+x} ]]; then
         ufw default allow outgoing
         # SSH
         if [[ -n ${current_ssh_port+x} ]]; then
-            ufw allow to 0.0.0.0 port ${current_ssh_port} from 127.0.0.1
+            ufw allow in on lo to 0.0.0.0 port ${current_ssh_port}
+            ufw allow out on lo to 0.0.0.0 port ${current_ssh_port}
         else
-            ufw allow to 0.0.0.0 port 22 from 127.0.0.1
+            ufw allow in on lo to 0.0.0.0 port 22
+            ufw allow out on lo to 0.0.0.0 port 22
         fi
         # HTTP
-        ufw allow to 0.0.0.0 port 80 from 127.0.0.1
+        ufw allow in on lo to 0.0.0.0 port 80
+        ufw allow out on lo to 0.0.0.0 port 80
         # HTTPS
-        ufw allow to 0.0.0.0 port 443 from 127.0.0.1
+        ufw allow in on lo to 0.0.0.0 port 443
+        ufw allow out on lo to 0.0.0.0 port 443
         # MySQL
-        ufw allow to 0.0.0.0 port 3306 from 127.0.0.1
+        ufw allow in on lo to 0.0.0.0 port 3306
+        ufw allow out on lo to 0.0.0.0 port 3306
         # PostgreSQL
-        ufw allow to 0.0.0.0 port 5432 from 127.0.0.1
+        ufw allow in on lo to 0.0.0.0 port 5432
+        ufw allow out on lo to 0.0.0.0 port 5432
         ufw --force disable
         ufw --force enable
         rm -f $ufwsectionlockfile
@@ -399,6 +408,15 @@ echo "# This file defines custom Compose sequences for Unicode characters" > "${
 echo "# Import default rules from the system Compose file:" >> "${HOMEDIR_USER}/.XCompose"
 echo "include \"/usr/share/X11/locale/es_ES.UTF-8/Compose\"" >> "${HOMEDIR_USER}/.XCompose"
 chown $USERNAME:$USERNAME "${HOMEDIR_USER}/.XCompose"
+
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+snap install --classic ${DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC}
+if [[ $DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC =~ "helm" ]]; then
+    snap run helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+fi
+
+snap install ${DEFAULT_SNAP_PACKAGES_INSTALL}
 
 ## Apache Example: batch apply atomic changes in directory
 # cp -a /var/www /var/www-tmp
