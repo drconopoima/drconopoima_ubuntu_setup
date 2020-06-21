@@ -2,7 +2,7 @@
 # drconopoima_ubuntu_setup (v0.9.0)
 # Quick from scratch setup script of an Ubuntu machine
 # Optional Dependency: Auxiliary vimrc/bashrc/bash_aliases accompanying files
-set -Eeuo pipefail
+set -uo pipefail
 # Sourced from `man bash`
 # set -E | set -o errtrace:  If set, any trap on ERR is inherited by shell functions
 # set -u | set -o nounset: Treat unset variables and parameters (except "@" and "*") as an  error  when performing parameter expansion.
@@ -19,7 +19,7 @@ set -Eeuo pipefail
 
 
 readonly SCRIPT_NAME="$0"
-readonly SCRIPT_VERSION='0.9.0'
+readonly SCRIPT_VERSION='0.9.1'
 
 script_name() {
     printf "${SCRIPT_NAME}: (v${SCRIPT_VERSION})\n"
@@ -46,7 +46,7 @@ kubuntu-restricted-extras kubuntu-restricted-addons kubuntu-wallpapers \
 plasma-workspace-wallpapers coreutils apt-file telnet openssh-client \
 openssh-server gpg net-tools exfat-fuse exfat-utils jq tmux maven sqlite3 \
 lsof colormake most calibre nocache jpegoptim mmv qpdf rename pgadmin3 postgresql \
-asciinema fail2ban dsniff"
+asciinema fail2ban dsniff ecryptfs-utils cryptsetup"
 
 readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="helm"
 readonly DEFAULT_SNAP_PACKAGES_INSTALL="libreoffice"
@@ -231,6 +231,7 @@ if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
                     shift
                     USERNAME="$2"
                     skip_argument=1
+                    ;;
                 *)
                     echo "Error: unrecognized option ${argument#*=}"
                     exit 1
@@ -262,7 +263,11 @@ if [[ -n ${VALIDATE_SSH_PORT+x} ]]; then
 fi
 
 if [[ -n ${INSTALL_PYTHON_PIP+x} ]]; then
-    packages_to_install+=('python-pip' 'python3-pip')
+    if [[ "${ubuntu_version}" =~ "20.04" ]]; then
+        packages_to_install+=('python2' 'python3-pip')
+    else
+        packages_to_install+=('python-pip' 'python3-pip')
+    fi
 fi
 
 if [[ -n ${INSTALL_PYTHON_PIP+x} ]]; then
@@ -270,7 +275,11 @@ if [[ -n ${INSTALL_PYTHON_PIP+x} ]]; then
 fi
 
 if [[ -n ${REMOVE_GLOBAL_PIP+x} ]]; then
-    packages_to_remove+=('python-pip' 'python3-pip')
+    if [[ "${ubuntu_version}" -eq "20.04" ]]; then
+        packages_to_remove+=('python3-pip')
+    else
+        packages_to_remove+=('python-pip' 'python3-pip')
+    fi
 fi
 
 if [[ -n ${INSTALL_UFW+x} ]]; then
@@ -294,11 +303,11 @@ apt-get full-upgrade -y
 DEBIAN_FRONTEND=noninteractive apt-get install -y ${packages_to_install[@]}
 
 if [[ -n ${GIT_USER_NAME+x} ]]; then
-    git config --global user.name "${GIT_USER_NAME}"
+    sudo -u $USERNAME git config --global user.name "${GIT_USER_NAME}"
 fi
 
 if [[ -n ${GIT_USER_EMAIL+x} ]]; then
-    git config --global user.email "${GIT_USER_EMAIL}"
+    sudo -u $USERNAME git config --global user.email "${GIT_USER_EMAIL}"
 fi
 
 readonly SSHD_CONFIG_FILE="/etc/ssh/sshd_config"
@@ -341,7 +350,7 @@ if [[ -n ${INSTALL_UFW+x} ]]; then
     if ( set -o noclobber; echo "$$" > "$ufwsectionlockfile") 2> /dev/null; then
         trap "rm -f '$ufwsectionlockfile'; exit $?" INT TERM EXIT
         ufw --force reset
-        ufw default block incoming
+        ufw default deny incoming
         ufw default allow outgoing
         # SSH
         if [[ -n ${current_ssh_port+x} ]]; then
@@ -386,7 +395,7 @@ if [[ -n ${VSCODE+x} ]]; then
     install -o root -g root -m 644 packages.microsoft.gpg /usr/share/keyrings/
     sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list'
     apt update
-    apt install -y vscode
+    apt install -y code
 fi
 
 DEBIAN_FRONTEND=noninteractive apt-get remove -y ${packages_to_remove[@]}
@@ -417,6 +426,13 @@ if [[ $DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC =~ "helm" ]]; then
 fi
 
 snap install ${DEFAULT_SNAP_PACKAGES_INSTALL}
+
+if [[ -n ${INSTALL_PYTHON_PIP+x} ]]; then
+    if [[ "${ubuntu_version}" =~ "20.04" ]]; then
+        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        python2 get-pip.py
+    fi
+fi
 
 ## Apache Example: batch apply atomic changes in directory
 # cp -a /var/www /var/www-tmp
