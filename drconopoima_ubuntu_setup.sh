@@ -17,7 +17,6 @@ set -uo pipefail
 # * David Phasley: https://www.davidpashley.com/articles/writing-robust-shell-scripts/
 # * Tom Van Eyck: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 
-
 readonly SCRIPT_NAME="$0"
 readonly SCRIPT_VERSION='0.9.1'
 
@@ -96,15 +95,14 @@ readonly ALL_ARGUMENTS=("$@")
 readonly ARGUMENT1="${ALL_ARGUMENTS[0]}"
 
 # Print help on -h/--help
-for argument in "${ARGUMENT1}"
-do
+for argument in "${ARGUMENT1}"; do
     case "${argument}" in
-        -h|--help)
-            help_text
-            exit 0
+    -h | --help)
+        help_text
+        exit 0
         ;;
-        *)
-            ubuntu_version="${argument}"
+    *)
+        ubuntu_version="${argument}"
         ;;
     esac
 done
@@ -115,127 +113,126 @@ CONSTANTS=('GOOGLE_CHROME' 'VSCODE' 'INSTALL_PYTHON_PIP' 'LOCAL_PIP' 'PYTHON_USE
 
 skip_argument=0
 if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
-    # Process Command line arguments & flags. 
+    # Process Command line arguments & flags.
     # Sources:
     # - @pretzelhands (Richard Blechinger): https://pretzelhands.com/posts/command-line-flags
     # - Shane Day: https://stackoverflow.com/a/24501190/6651552
-    for argument in "${REST_ARGUMENTS[@]}"
-    do
+    for argument in "${REST_ARGUMENTS[@]}"; do
         if [[ "${skip_argument}" -eq 0 ]]; then
             case ${argument} in
-                # Handle --packages=value
-                --packages=*)
-                    packages=("${argument#*=}")
-                    shift # Remove --packages=* from processing
-                    ;;
-                # Handle --packages value
-                --packages)
-                    shift
-                    packages=("$2")
-                    skip_argument=1
-                    ;;
-                --google-chrome)
-                    GOOGLE_CHROME=1
-                    shift # Remove --google-chrome from processing
-                    ;;
-                --vscode)
-                    VSCODE=1
-                    shift # Remove --vscode= from processing
-                    ;;
-                --python-pip)
-                    INSTALL_PYTHON_PIP=1
-                    shift
-                    ;;
-                --local-pip=*)
-                    INSTALL_PYTHON_PIP=1
-                    REMOVE_GLOBAL_PIP=1
-                    LOCAL_PIP=1
-                    for user in ${argument#*=}; do
-                        PYTHON_USER+=($user)
-                    done
-                    shift # Remove --local-pip=* from processing
-                    ;;
-                --local-pip)
-                    shift
-                    INSTALL_PYTHON_PIP=1
-                    REMOVE_GLOBAL_PIP=1
-                    LOCAL_PIP=1
-                    for user in $2; do
-                        PYTHON_USER+=($user)
-                    done
-                    skip_argument=1
-                    ;;
-                --remove-global-pip )
-                    REMOVE_GLOBAL_PIP=1
-                    shift
-                    ;;
-                --git)
-                    INSTALL_GIT=1
-                    shift
-                    ;;
-                --git-name=*)
-                    INSTALL_GIT=1
-                    GIT_USER_NAME="${argument#*=}"
-                    shift
-                    ;;
-                --git-name)
-                    shift
-                    INSTALL_GIT=1
-                    GIT_USER_NAME="$2"
-                    skip_argument=1
-                    ;;
-                --git-email=*)
-                    INSTALL_GIT=1
-                    GIT_USER_EMAIL="${argument#*=}"
-                    shift
-                    ;;
-                --git-email)
-                    shift
-                    INSTALL_GIT=1
-                    GIT_USER_EMAIL="$2"
-                    skip_argument=1
-                    ;;
-                --clean-packages=*)
-                    for package in ${argument#*=}; do
-                        packages_to_remove+=($package)
-                    done
-                    shift
-                    ;;
-                --clean-packages)
-                    shift
-                    for package in $2; do
-                        packages_to_remove+=($package)
-                    done
-                    skip_argument=1
-                    ;;
-                --ssh-port=*)
-                    NEW_SSH_PORT="${argument#*=}"
-                    VALIDATE_SSH_PORT=1
-                    shift
-                    ;;
-                --ssh-port)
-                    shift
-                    NEW_SSH_PORT="$2"
-                    VALIDATE_SSH_PORT=1
-                    skip_argument=1
-                    ;;
-                --ufw)
-                    INSTALL_UFW=1
-                    shift
-                    ;;
-                --user=*)
-                    USERNAME="${argument#*=}"
-                    shift
-                    ;;
-                --user)
-                    shift
-                    USERNAME="$2"
-                    skip_argument=1
-                    ;;
-                *)
-                    echo "Error: unrecognized option ${argument#*=}"
-                    exit 1
-                    ;;
+            # Handle --packages=value
+            --packages=*)
+                packages=("${argument#*=}")
+                shift # Remove --packages=* from processing
+                ;;
+            # Handle --packages value
+            --packages)
+                shift
+                packages=("$2")
+                skip_argument=1
+                ;;
+            --google-chrome)
+                GOOGLE_CHROME=1
+                shift # Remove --google-chrome from processing
+                ;;
+            --vscode)
+                VSCODE=1
+                shift # Remove --vscode= from processing
+                ;;
+            --python-pip)
+                INSTALL_PYTHON_PIP=1
+                shift
+                ;;
+            --local-pip=*)
+                INSTALL_PYTHON_PIP=1
+                REMOVE_GLOBAL_PIP=1
+                LOCAL_PIP=1
+                for user in ${argument#*=}; do
+                    PYTHON_USER+=($user)
+                done
+                shift # Remove --local-pip=* from processing
+                ;;
+            --local-pip)
+                shift
+                INSTALL_PYTHON_PIP=1
+                REMOVE_GLOBAL_PIP=1
+                LOCAL_PIP=1
+                for user in $2; do
+                    PYTHON_USER+=($user)
+                done
+                skip_argument=1
+                ;;
+            --remove-global-pip)
+                REMOVE_GLOBAL_PIP=1
+                shift
+                ;;
+            --git)
+                INSTALL_GIT=1
+                shift
+                ;;
+            --git-name=*)
+                INSTALL_GIT=1
+                GIT_USER_NAME="${argument#*=}"
+                shift
+                ;;
+            --git-name)
+                shift
+                INSTALL_GIT=1
+                GIT_USER_NAME="$2"
+                skip_argument=1
+                ;;
+            --git-email=*)
+                INSTALL_GIT=1
+                GIT_USER_EMAIL="${argument#*=}"
+                shift
+                ;;
+            --git-email)
+                shift
+                INSTALL_GIT=1
+                GIT_USER_EMAIL="$2"
+                skip_argument=1
+                ;;
+            --clean-packages=*)
+                for package in ${argument#*=}; do
+                    packages_to_remove+=($package)
+                done
+                shift
+                ;;
+            --clean-packages)
+                shift
+                for package in $2; do
+                    packages_to_remove+=($package)
+                done
+                skip_argument=1
+                ;;
+            --ssh-port=*)
+                NEW_SSH_PORT="${argument#*=}"
+                VALIDATE_SSH_PORT=1
+                shift
+                ;;
+            --ssh-port)
+                shift
+                NEW_SSH_PORT="$2"
+                VALIDATE_SSH_PORT=1
+                skip_argument=1
+                ;;
+            --ufw)
+                INSTALL_UFW=1
+                shift
+                ;;
+            --user=*)
+                USERNAME="${argument#*=}"
+                shift
+                ;;
+            --user)
+                shift
+                USERNAME="$2"
+                skip_argument=1
+                ;;
+            *)
+                echo "Error: unrecognized option ${argument#*=}"
+                exit 1
+                ;;
             esac
         else
             skip_argument=0
@@ -253,12 +250,12 @@ done
 if [[ -n ${VALIDATE_SSH_PORT+x} ]]; then
     number_regex='^[0-9]+$'
     if ! [[ $NEW_SSH_PORT =~ $number_regex ]]; then
-    # Binary operator =~: the string to the right of the operator is a regular expression and  matched. The return value is 0 if the string matches the pattern, and 1 otherwise. If the regular expression is syntactically incorrect, the return value is 2. Same precedence as == and !=.
-        echo "Warning: Input Error. New SSH port value '$NEW_SSH_PORT' is not numeric. Skipping changes to SSH port configuration." >&2;
-    elif [[ $NEW_SSH_PORT -eq 22 || ( $NEW_SSH_PORT -gt 1024 && $NEW_SSH_PORT -lt 65535 ) ]]; then
-        readonly CHANGE_SSH_PORT=1; 
+        # Binary operator =~: the string to the right of the operator is a regular expression and  matched. The return value is 0 if the string matches the pattern, and 1 otherwise. If the regular expression is syntactically incorrect, the return value is 2. Same precedence as == and !=.
+        echo "Warning: Input Error. New SSH port value '$NEW_SSH_PORT' is not numeric. Skipping changes to SSH port configuration." >&2
+    elif [[ $NEW_SSH_PORT -eq 22 || ($NEW_SSH_PORT -gt 1024 && $NEW_SSH_PORT -lt 65535) ]]; then
+        readonly CHANGE_SSH_PORT=1
     else
-        echo "Warning: Input Error. New SSH port value '$NEW_SSH_PORT' is outside of valid range for SSH ports: 22,1025~65534. Skipping changes to SSH port configuration." >&2;
+        echo "Warning: Input Error. New SSH port value '$NEW_SSH_PORT' is outside of valid range for SSH ports: 22,1025~65534. Skipping changes to SSH port configuration." >&2
     fi
 fi
 
@@ -312,7 +309,7 @@ fi
 
 readonly SSHD_CONFIG_FILE="/etc/ssh/sshd_config"
 if [[ -e $SSHD_CONFIG_FILE ]]; then
-    GREP_SSH_PORT_CONFIG=$(grep -E "^[[:space:]]*Port([[:space:]]*|[=]?)" $SSHD_CONFIG_FILE | awk '{$1=$1;print}');
+    GREP_SSH_PORT_CONFIG=$(grep -E "^[[:space:]]*Port([[:space:]]*|[=]?)" $SSHD_CONFIG_FILE | awk '{$1=$1;print}')
     ## GNU/POSIX extensions to regular expressions. Source: Chapter 3 `sed` FAQ. http://sed.sourceforge.net/sedfaq3.html
     # [[:alnum:]]  - [A-Za-z0-9]     Alphanumeric characters
     # [[:alpha:]]  - [A-Za-z]        Alphabetic characters
@@ -328,12 +325,12 @@ if [[ -e $SSHD_CONFIG_FILE ]]; then
     # [[:xdigit:]] - [0-9a-fA-F]     Hexadecimal digit characters
     readonly GREP_SSH_PORT_CONFIG
     if [[ -z ${GREP_SSH_PORT_CONFIG+x} ]]; then
-        current_ssh_port=22;
+        current_ssh_port=22
     elif [[ -z "${GREP_SSH_PORT_CONFIG##*'='*}" ]]; then
         # if configuration is set up with equal sign, e.g. Port=22
-        current_ssh_port=$(echo "$GREP_SSH_PORT_CONFIG"| cut -d"=" -f2 | awk '{$1=$1;print}')
+        current_ssh_port=$(echo "$GREP_SSH_PORT_CONFIG" | cut -d"=" -f2 | awk '{$1=$1;print}')
     else
-        current_ssh_port=$(echo "$GREP_SSH_PORT_CONFIG"| awk '{print $2}')
+        current_ssh_port=$(echo "$GREP_SSH_PORT_CONFIG" | awk '{print $2}')
     fi
 fi
 
@@ -341,13 +338,16 @@ if [[ -n ${CHANGE_SSH_PORT+x} ]]; then
     if [[ -e $SSHD_CONFIG_FILE ]]; then
         :
     else
-        echo "Warning: System Error. Could not find SSHD configuration file at '$SSHD_CONFIG_FILE'. Skipping changes to SSH port configuration." >&2;
+        echo "Warning: System Error. Could not find SSHD configuration file at '$SSHD_CONFIG_FILE'. Skipping changes to SSH port configuration." >&2
     fi
 fi
 
-readonly ufwsectionlockfile="/var/lock/$SCRIPT_NAME.ufw.lock";
+readonly ufwsectionlockfile="/var/lock/$SCRIPT_NAME.ufw.lock"
 if [[ -n ${INSTALL_UFW+x} ]]; then
-    if ( set -o noclobber; echo "$$" > "$ufwsectionlockfile") 2> /dev/null; then
+    if (
+        set -o noclobber
+        echo "$$" >"$ufwsectionlockfile"
+    ) 2>/dev/null; then
         trap "rm -f '$ufwsectionlockfile'; exit $?" INT TERM EXIT
         ufw --force reset
         ufw default deny incoming
@@ -377,7 +377,7 @@ if [[ -n ${INSTALL_UFW+x} ]]; then
         rm -f $ufwsectionlockfile
         trap - INT TERM EXIT
     else
-        echo "Failed to acquire lockfile: Held by $ufwsectionlockfile." 
+        echo "Failed to acquire lockfile: Held by $ufwsectionlockfile."
     fi
 fi
 
@@ -385,13 +385,13 @@ if [[ -n ${GOOGLE_CHROME+x} ]]; then
     TEMP_GOOGLE_CHROME_DEB="$(mktemp).deb"
     trap "rm -f '$TEMP_GOOGLE_CHROME_DEB'; exit $?" INT TERM EXIT
     curl -qo "${TEMP_GOOGLE_CHROME_DEB}" 'https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb' &&
-    apt install -y "${TEMP_GOOGLE_CHROME_DEB}" &&
-    rm -f $TEMP_GOOGLE_CHROME_DEB
+        apt install -y "${TEMP_GOOGLE_CHROME_DEB}" &&
+        rm -f $TEMP_GOOGLE_CHROME_DEB
     trap - INT TERM EXIT
 fi
 
 if [[ -n ${VSCODE+x} ]]; then
-    curl -q https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+    curl -q https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor >packages.microsoft.gpg
     install -o root -g root -m 644 packages.microsoft.gpg /usr/share/keyrings/
     sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list'
     apt update
@@ -410,12 +410,12 @@ sudo -u $USERNAME /bin/bash -c "PATH='/usr/bin:$PATH'; setxkbmap -option "
 # list of pnemonic key combinations in: /usr/share/X11/locale/en_US.UTF-8/Compose
 # or here: https://cgit.freedesktop.org/xorg/lib/libX11/tree/nls/en_US.UTF-8/Compose.pre
 # Source with short explanation here: https://superuser.com/questions/74763/how-to-type-unicode-characters-in-kde/78724#78724
-# Source with longer explanation here: http://canonical.org/~kragen/setting-up-keyboard.html 
+# Source with longer explanation here: http://canonical.org/~kragen/setting-up-keyboard.html
 # Useful XCompose GitHub here: https://github.com/kragen/XCompose
 sudo -u $USERNAME /bin/bash -c "PATH='/usr/bin:$PATH'; setxkbmap -option compose:rctrl"
-echo "# This file defines custom Compose sequences for Unicode characters" > "${HOMEDIR_USER}/.XCompose"
-echo "# Import default rules from the system Compose file:" >> "${HOMEDIR_USER}/.XCompose"
-echo "include \"/usr/share/X11/locale/es_ES.UTF-8/Compose\"" >> "${HOMEDIR_USER}/.XCompose"
+echo "# This file defines custom Compose sequences for Unicode characters" >"${HOMEDIR_USER}/.XCompose"
+echo "# Import default rules from the system Compose file:" >>"${HOMEDIR_USER}/.XCompose"
+echo "include \"/usr/share/X11/locale/es_ES.UTF-8/Compose\"" >>"${HOMEDIR_USER}/.XCompose"
 chown $USERNAME:$USERNAME "${HOMEDIR_USER}/.XCompose"
 
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
