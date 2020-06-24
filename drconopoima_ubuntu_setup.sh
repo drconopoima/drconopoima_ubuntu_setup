@@ -45,7 +45,7 @@ kubuntu-restricted-extras kubuntu-restricted-addons kubuntu-wallpapers \
 plasma-workspace-wallpapers coreutils apt-file telnet openssh-client \
 openssh-server gpg net-tools exfat-fuse exfat-utils jq tmux maven sqlite3 \
 lsof colormake most calibre nocache jpegoptim mmv qpdf rename pgadmin3 postgresql \
-asciinema fail2ban dsniff ecryptfs-utils cryptsetup"
+asciinema fail2ban dsniff ecryptfs-utils cryptsetup mariadb-server mariadb-client"
 
 readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="helm"
 readonly DEFAULT_SNAP_PACKAGES_INSTALL="libreoffice"
