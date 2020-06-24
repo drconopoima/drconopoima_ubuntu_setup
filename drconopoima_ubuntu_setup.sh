@@ -292,6 +292,7 @@ if [[ -n ${VSCODE+x} ]]; then
 fi
 
 add-apt-repository universe
+add-apt-repository multiverse
 
 apt-get update
 
