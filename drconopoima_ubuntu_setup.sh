@@ -28,12 +28,6 @@ readonly -f script_name
 
 script_name
 
-# Check for root user
-if [[ "${EUID}" -ne 0 ]]; then
-    printf "ERROR: This script needs to run as root.\n"
-    exit 1
-fi
-
 readonly DEFAULT_PACKAGES_TO_INSTALL="curl wget vim-gtk3 neovim bat ufw git make \
 build-essential default-jdk default-jre bleachbit vlc flatpak \
 chromium-browser glances atop docker.io docker-compose golang \
@@ -106,6 +100,12 @@ for argument in "${ARGUMENT1}"; do
         ;;
     esac
 done
+
+# Check for root user
+if [[ "${EUID}" -ne 0 ]]; then
+    printf "ERROR: This script needs to run as root.\n"
+    exit 1
+fi
 
 readonly REST_ARGUMENTS=("${ALL_ARGUMENTS[@]:1}")
 
