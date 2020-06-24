@@ -405,7 +405,6 @@ DEBIAN_FRONTEND=noninteractive apt-get remove -y ${packages_to_remove[@]}
 ## Check current options
 # setxkbmap -query
 ## Undo any previous options (pass empty argument list). Source https://unix.stackexchange.com/questions/229555/how-do-i-unset-an-option-in-xkbmap
-sudo -u $USERNAME /bin/bash -c "PATH='/usr/bin:$PATH'; setxkbmap -option "
 ## Set scroll lock as compose key
 # list of key values here: https://gist.github.com/jatcwang/ae3b7019f219b8cdc6798329108c9aee
 # list of pnemonic key combinations in: /usr/share/X11/locale/en_US.UTF-8/Compose
@@ -413,11 +412,17 @@ sudo -u $USERNAME /bin/bash -c "PATH='/usr/bin:$PATH'; setxkbmap -option "
 # Source with short explanation here: https://superuser.com/questions/74763/how-to-type-unicode-characters-in-kde/78724#78724
 # Source with longer explanation here: http://canonical.org/~kragen/setting-up-keyboard.html
 # Useful XCompose GitHub here: https://github.com/kragen/XCompose
-sudo -u $USERNAME /bin/bash -c "PATH='/usr/bin:$PATH'; setxkbmap -option compose:rctrl"
-echo "# This file defines custom Compose sequences for Unicode characters" >"${HOMEDIR_USER}/.XCompose"
-echo "# Import default rules from the system Compose file:" >>"${HOMEDIR_USER}/.XCompose"
-echo "include \"/usr/share/X11/locale/es_ES.UTF-8/Compose\"" >>"${HOMEDIR_USER}/.XCompose"
+sudo -u $USERNAME /usr/bin/setxkbmap -option compose:rctrl
+LINES_PROFILE=('# Enable custom Compose sequences on login' '/usr/bin/setxkbmap -option compose:rctrl')
+for line in "${LINES_PROFILE[@]}"; do
+    grep -qxF -- "$line" ${HOMEDIR_USER}/.profile 2>/dev/null || echo "$line" >>${HOMEDIR_USER}/.profile
+done
+LINES_XCOMPOSE=('# This file defines custom Compose sequences for Unicode characters' '# Import default rules from the system Compose file:' 'include "/usr/share/X11/locale/es_ES.UTF-8/Compose"' )
+for line in "${LINES_XCOMPOSE[@]}"; do
+    grep -qxF -- "$line" ${HOMEDIR_USER}/.XCompose 2>/dev/null || echo "$line" >>${HOMEDIR_USER}/.XCompose
+done
 chown $USERNAME:$USERNAME "${HOMEDIR_USER}/.XCompose"
+chown $USERNAME:$USERNAME "${HOMEDIR_USER}/.profile"
 
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
