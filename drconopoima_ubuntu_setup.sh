@@ -263,9 +263,9 @@ fi
 
 if [[ -n ${INSTALL_PYTHON_PIP+x} ]]; then
     if [[ "${ubuntu_version}" =~ "20.04" ]]; then
-        packages_to_install+=('python2' 'python3-pip')
+        packages_to_install+=('python2' 'python3-pip' 'python3-venv')
     else
-        packages_to_install+=('python-pip' 'python3-pip')
+        packages_to_install+=('python-pip' 'python3-pip' 'python3-venv')
     fi
 fi
 
