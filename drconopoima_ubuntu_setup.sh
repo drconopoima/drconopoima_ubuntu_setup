@@ -18,7 +18,7 @@ set -uo pipefail
 # * Tom Van Eyck: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 
 readonly SCRIPT_NAME="$0"
-readonly SCRIPT_VERSION='0.9.1'
+readonly SCRIPT_VERSION='1.0.0'
 
 script_name() {
     printf "${SCRIPT_NAME}: (v${SCRIPT_VERSION})\n"
@@ -44,7 +44,8 @@ zsh autojump dolphin-plugins postgresql-contrib openjdk-8-jre mesa-utils \
 rtl8821ce-dkms bc module-assistant tldr fd-find imagemagick"
 
 readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="helm"
-readonly DEFAULT_SNAP_PACKAGES_INSTALL="libreoffice"
+readonly DEFAULT_SNAP_PACKAGES_INSTALL=""
+readonly DEFAULT_FLATPAK_PACKAGES_INSTALL="org.libreoffice.LibreOffice"
 
 DEFAULT_PACKAGES_TO_REMOVE="gstreamer1.0-fluendo-mp3 telnetd"
 
@@ -419,7 +420,7 @@ LINES_PROFILE=('# Enable custom Compose sequences on login' '/usr/bin/setxkbmap 
 for line in "${LINES_PROFILE[@]}"; do
     grep -qxF -- "$line" ${HOMEDIR_USER}/.profile 2>/dev/null || echo "$line" >>${HOMEDIR_USER}/.profile
 done
-LINES_XCOMPOSE=('# This file defines custom Compose sequences for Unicode characters' '# Import default rules from the system Compose file:' 'include "/usr/share/X11/locale/es_ES.UTF-8/Compose"' )
+LINES_XCOMPOSE=('# This file defines custom Compose sequences for Unicode characters' '# Import default rules from the system Compose file:' 'include "/usr/share/X11/locale/es_ES.UTF-8/Compose"')
 for line in "${LINES_XCOMPOSE[@]}"; do
     grep -qxF -- "$line" ${HOMEDIR_USER}/.XCompose 2>/dev/null || echo "$line" >>${HOMEDIR_USER}/.XCompose
 done
@@ -427,13 +428,24 @@ chown $USERNAME:$USERNAME "${HOMEDIR_USER}/.XCompose"
 chown $USERNAME:$USERNAME "${HOMEDIR_USER}/.profile"
 
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+if [[ -n ${USERNAME+x} ]]; then
+    sudo -u ${USERNAME} flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    sudo -u ${USERNAME} flatpak install -y --user ${DEFAULT_FLATPAK_PACKAGES_INSTALL}
+else
+    flatpak install -y ${DEFAULT_FLATPAK_PACKAGES_INSTALL}
+fi
 
-snap install --classic ${DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC}
+if [[ -n ${DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC} ]]; then
+    snap install --classic ${DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC}
+fi
+
 if [[ $DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC =~ "helm" ]]; then
     snap run helm repo add stable https://kubernetes-charts.storage.googleapis.com/
 fi
 
-snap install ${DEFAULT_SNAP_PACKAGES_INSTALL}
+if [[ -n ${DEFAULT_SNAP_PACKAGES_INSTALL} ]]; then
+    snap install ${DEFAULT_SNAP_PACKAGES_INSTALL}
+fi
 
 if [[ -n ${INSTALL_PYTHON_PIP+x} ]]; then
     if [[ "${ubuntu_version}" =~ "20.04" ]]; then
