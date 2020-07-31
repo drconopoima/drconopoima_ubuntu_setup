@@ -31,7 +31,7 @@ script_name
 readonly DEFAULT_PACKAGES_TO_INSTALL="curl wget vim-gtk3 neovim bat ufw git make \
 build-essential default-jdk default-jre bleachbit vlc flatpak \
 glances atop libssl-dev zlib1g-dev libbz2-dev libreadline-dev \
-libsqlite3-dev llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev \
+libsqlite3-dev llvm libncurses5-dev libncursesw5-dev xz-utils libffi-dev \
 liblzma-dev python-openssl virtualbox vagrant virtualbox-ext-pack krita ibus \
 netcat-openbsd snapd libnotify-bin hwinfo tcpdump gawk fonts-opensymbol \
 kubuntu-restricted-extras kubuntu-restricted-addons kubuntu-wallpapers \
