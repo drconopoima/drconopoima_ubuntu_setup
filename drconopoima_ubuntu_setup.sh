@@ -442,7 +442,7 @@ chown $USERNAME:$USERNAME "${HOMEDIR_USER}/.profile"
 
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 if [[ -n ${USERNAME+x} ]]; then
-    sudo -u ${USERNAME} flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    sudo -u ${USERNAME} flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     sudo -u ${USERNAME} flatpak install -y --user ${DEFAULT_FLATPAK_PACKAGES_INSTALL}
 else
     flatpak install -y ${DEFAULT_FLATPAK_PACKAGES_INSTALL}
