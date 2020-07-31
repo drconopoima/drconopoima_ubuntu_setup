@@ -30,7 +30,7 @@ script_name
 
 readonly DEFAULT_PACKAGES_TO_INSTALL="curl wget vim-gtk3 neovim bat ufw git make \
 build-essential default-jdk default-jre bleachbit vlc flatpak \
-glances atop docker-compose libssl-dev zlib1g-dev libbz2-dev libreadline-dev \
+glances atop libssl-dev zlib1g-dev libbz2-dev libreadline-dev \
 libsqlite3-dev llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev \
 liblzma-dev python-openssl virtualbox vagrant virtualbox-ext-pack krita ibus \
 netcat-openbsd snapd libnotify-bin hwinfo tcpdump gawk fonts-opensymbol \
@@ -66,6 +66,7 @@ help_text() {
     printf "    --packages=<list> list of packages to install in quotation marks\n"
     printf "    --google-chrome: Install google-chrome\n"
     printf "    --vscode: Install Visual Studio Code\n"
+    printf "    --vscode-insiders: Install Visual Studio Code Insiders \n"
     printf "    --python-pip: Installs python-pip and python3-pip\n"
     printf "    --local-pip=<user>: Installs pip locally to provided user. Implies --python-pip and --remove-global-pip.\n"
     printf "    --remove-global-pip: Removes globally installed python[3]-pip packages. Implies --python-pip and --local-pip.\n"
@@ -112,7 +113,7 @@ fi
 
 readonly REST_ARGUMENTS=("${ALL_ARGUMENTS[@]:1}")
 
-CONSTANTS=('GOOGLE_CHROME' 'VSCODE' 'INSTALL_PYTHON_PIP' 'LOCAL_PIP' 'PYTHON_USER' 'INSTALL_GIT' 'GIT_USER_NAME' 'GIT_USER_EMAIL' 'REMOVE_GLOBAL_PIP' 'INSTALL_UFW' 'NEW_SSH_PORT' 'VALIDATE_SSH_PORT')
+CONSTANTS=('GOOGLE_CHROME' 'VSCODE' 'VSCODE_INSIDERS' 'INSTALL_PYTHON_PIP' 'LOCAL_PIP' 'PYTHON_USER' 'INSTALL_GIT' 'GIT_USER_NAME' 'GIT_USER_EMAIL' 'REMOVE_GLOBAL_PIP' 'INSTALL_UFW' 'NEW_SSH_PORT' 'VALIDATE_SSH_PORT')
 
 skip_argument=0
 if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
@@ -140,6 +141,10 @@ if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
                 ;;
             --vscode)
                 VSCODE=1
+                shift # Remove --vscode= from processing
+                ;;
+            --vscode-insiders)
+                VSCODE_INSIDERS=1
                 shift # Remove --vscode= from processing
                 ;;
             --python-pip)
@@ -394,12 +399,20 @@ if [[ -n ${GOOGLE_CHROME+x} ]]; then
     trap - INT TERM EXIT
 fi
 
-if [[ -n ${VSCODE+x} ]]; then
+if [[ -n ${VSCODE+x} || -n ${VSCODE_INSIDERS+x} ]]; then
     curl -q https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor >packages.microsoft.gpg
     install -o root -g root -m 644 packages.microsoft.gpg /usr/share/keyrings/
     sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list'
-    apt update
-    apt install -y code
+fi
+
+if [[ -n ${VSCODE+x} ]]; then
+    DEBIAN_FRONTEND=noninteractive apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y code
+fi
+
+if [[ -n ${VSCODE_INSIDERS+x} ]]; then
+    DEBIAN_FRONTEND=noninteractive apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y code-insiders
 fi
 
 DEBIAN_FRONTEND=noninteractive apt-get remove -y ${packages_to_remove[@]}
