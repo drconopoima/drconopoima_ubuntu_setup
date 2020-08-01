@@ -76,6 +76,7 @@ help_text() {
     printf "    --clean-packages: List of packages to remove on top of default clean-up packages.\n"
     printf "    --extra-packages: List of additional packages to install on top of default packages.\n"
     printf "    --ufw: Install UFW firewall and set up the following default rules: deny incoming, allow outgoing, allow localhost 22, 3306 (mysql), 5432 (postgresql), 80 (http), 443 (https).\n"
+    printf "    --docker-ce: Install Docker Community Edition (ensures removal of any docker dependency from APT package manager)\n"
     printf "    --user: Select user for configuration\n"
 }
 
@@ -113,7 +114,7 @@ fi
 
 readonly REST_ARGUMENTS=("${ALL_ARGUMENTS[@]:1}")
 
-CONSTANTS=('GOOGLE_CHROME' 'VSCODE' 'VSCODE_INSIDERS' 'INSTALL_PYTHON_PIP' 'LOCAL_PIP' 'PYTHON_USER' 'INSTALL_GIT' 'GIT_USER_NAME' 'GIT_USER_EMAIL' 'REMOVE_GLOBAL_PIP' 'INSTALL_UFW' 'NEW_SSH_PORT' 'VALIDATE_SSH_PORT')
+CONSTANTS=('GOOGLE_CHROME' 'VSCODE' 'VSCODE_INSIDERS' 'INSTALL_PYTHON_PIP' 'LOCAL_PIP' 'PYTHON_USER' 'INSTALL_GIT' 'GIT_USER_NAME' 'GIT_USER_EMAIL' 'REMOVE_GLOBAL_PIP' 'INSTALL_UFW' 'NEW_SSH_PORT' 'VALIDATE_SSH_PORT' 'DOCKER_CE')
 
 skip_argument=0
 if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
@@ -138,6 +139,10 @@ if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
             --google-chrome)
                 GOOGLE_CHROME=1
                 shift # Remove --google-chrome from processing
+                ;;
+            --docker-ce)
+                DOCKER_CE=1
+                shift
                 ;;
             --vscode)
                 VSCODE=1
@@ -295,8 +300,8 @@ if [[ -n ${GOOGLE_CHROME+x} ]]; then
     packages_to_install+=('curl')
 fi
 
-if [[ -n ${VSCODE+x} ]]; then
-    packages_to_install+=('curl coreutils apt-transport-https')
+if [[ -n ${VSCODE+x} || -n ${DOCKER_CE+x} ]]; then
+    packages_to_install+=('curl coreutils apt-transport-https ca-certificates wget gnupg-agent software-properties-common')
 fi
 
 add-apt-repository universe
@@ -304,7 +309,7 @@ add-apt-repository multiverse
 
 apt-get update
 
-apt-get full-upgrade -y
+DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y
 
 DEBIAN_FRONTEND=noninteractive apt-get install -y ${packages_to_install[@]}
 
@@ -394,7 +399,7 @@ if [[ -n ${GOOGLE_CHROME+x} ]]; then
     TEMP_GOOGLE_CHROME_DEB="$(mktemp).deb"
     trap "rm -f '$TEMP_GOOGLE_CHROME_DEB'; exit $?" INT TERM EXIT
     curl -qo "${TEMP_GOOGLE_CHROME_DEB}" 'https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb' &&
-        apt install -y "${TEMP_GOOGLE_CHROME_DEB}" &&
+        DEBIAN_FRONTEND=noninteractive apt-get install -y "${TEMP_GOOGLE_CHROME_DEB}" &&
         rm -f $TEMP_GOOGLE_CHROME_DEB
     trap - INT TERM EXIT
 fi
@@ -406,13 +411,21 @@ if [[ -n ${VSCODE+x} || -n ${VSCODE_INSIDERS+x} ]]; then
 fi
 
 if [[ -n ${VSCODE+x} ]]; then
-    DEBIAN_FRONTEND=noninteractive apt-get update
+    apt-get update
     DEBIAN_FRONTEND=noninteractive apt-get install -y code
 fi
 
 if [[ -n ${VSCODE_INSIDERS+x} ]]; then
-    DEBIAN_FRONTEND=noninteractive apt-get update
+    apt-get update
     DEBIAN_FRONTEND=noninteractive apt-get install -y code-insiders
+fi
+
+if [[ -n ${DOCKER_CE+x} ]]; then
+    DEBIAN_FRONTEND=noninteractive apt-get remove -y docker docker-engine docker.io containerd runc
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+    apt-key fingerprint 0EBFCD88 | wc -l | grep -v 0 &>/dev/null && DEBIAN_FRONTEND=noninteractive add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io
 fi
 
 DEBIAN_FRONTEND=noninteractive apt-get remove -y ${packages_to_remove[@]}
