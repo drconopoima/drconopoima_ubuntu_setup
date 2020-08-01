@@ -2,7 +2,7 @@
 # drconopoima_ubuntu_setup (v0.9.0)
 # Quick from scratch setup script of an Ubuntu machine
 # Optional Dependency: Auxiliary vimrc/bashrc/bash_aliases accompanying files
-set -n
+# set -n
 set -uo pipefail
 # Sourced from `man bash`
 # set -E | set -o errtrace:  If set, any trap on ERR is inherited by shell functions
@@ -72,8 +72,8 @@ help_text() {
     printf "    --local-pip=<user>: Installs pip locally to provided user. Implies --python-pip and --remove-global-pip.\n"
     printf "    --remove-global-pip: Removes globally installed python[3]-pip packages. Implies --python-pip and --local-pip.\n"
     printf "    --git: Installs git.\n"
-    printf "    --git-name: Sets up global user name for git config. Implies --git.\n"
-    printf "    --git-email: Sets up global user email for git config. Implies --git.\n"
+    printf "    --git-name: Sets up global user name for git config. Implies --git. Requires --user=<system_user>.\n"
+    printf "    --git-email: Sets up global user email for git config. Implies --git. Requires --user=<system_user>.\n"
     printf "    --clean-packages: List of packages to remove on top of default clean-up packages.\n"
     printf "    --extra-packages: List of additional packages to install on top of default packages.\n"
     printf "    --ufw: Install UFW firewall and set up the following default rules: deny incoming, allow outgoing, allow localhost 22, 3306 (mysql), 5432 (postgresql), 80 (http), 443 (https).\n"
@@ -265,11 +265,18 @@ if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
     done
 fi
 
-HOMEDIR_USER="$(getent passwd $USERNAME | awk -F ':' '{print $6}')"
-
 for constant in ${CONSTANTS[@]}; do
     readonly ${constant}
 done
+
+if [[ -n ${USERNAME+x} ]]; then
+    HOMEDIR_USER="$(getent passwd $USERNAME | awk -F ':' '{print $6}')"
+fi
+
+if [[ -n ${GIT_USER_NAME+x} && ! -n ${USERNAME+x} || ${GIT_USER_EMAIL+x} && ! -n ${USERNAME+x} ]]; then
+    echo "Argument Error: You need to specify a system user for whom to configure Git identity."
+    exit 1
+fi
 
 if [[ -n ${VALIDATE_SSH_PORT+x} ]]; then
     number_regex='^[0-9]+$'
@@ -442,6 +449,9 @@ if [[ -n ${DOCKER_CE+x} ]]; then
     apt-key fingerprint 0EBFCD88 | wc -l | grep -v 0 &>/dev/null && DEBIAN_FRONTEND=noninteractive add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
     apt-get update
     DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io
+    if [[ -n ${USERNAME+x} ]]; then
+        usermod --append --groups docker "$USERNAME"
+    fi
 fi
 
 if [[ -n ${CALIBRE+x} ]]; then
@@ -465,17 +475,19 @@ DEBIAN_FRONTEND=noninteractive apt-get remove -y ${packages_to_remove[@]}
 # Source with short explanation here: https://superuser.com/questions/74763/how-to-type-unicode-characters-in-kde/78724#78724
 # Source with longer explanation here: http://canonical.org/~kragen/setting-up-keyboard.html
 # Useful XCompose GitHub here: https://github.com/kragen/XCompose
-sudo -u $USERNAME /usr/bin/setxkbmap -option compose:rctrl
-LINES_PROFILE=('# Enable custom Compose sequences on login' '/usr/bin/setxkbmap -option compose:rctrl')
-for line in "${LINES_PROFILE[@]}"; do
-    grep -qxF -- "$line" ${HOMEDIR_USER}/.profile 2>/dev/null || echo "$line" >>${HOMEDIR_USER}/.profile
-done
-LINES_XCOMPOSE=('# This file defines custom Compose sequences for Unicode characters' '# Import default rules from the system Compose file:' 'include "/usr/share/X11/locale/es_ES.UTF-8/Compose"')
-for line in "${LINES_XCOMPOSE[@]}"; do
-    grep -qxF -- "$line" ${HOMEDIR_USER}/.XCompose 2>/dev/null || echo "$line" >>${HOMEDIR_USER}/.XCompose
-done
-chown $USERNAME:$USERNAME "${HOMEDIR_USER}/.XCompose"
-chown $USERNAME:$USERNAME "${HOMEDIR_USER}/.profile"
+if [[ -n ${USERNAME+x} ]]; then
+    sudo -u $USERNAME /usr/bin/setxkbmap -option compose:rctrl
+    LINES_PROFILE=('# Enable custom Compose sequences on login' '/usr/bin/setxkbmap -option compose:rctrl')
+    for line in "${LINES_PROFILE[@]}"; do
+        grep -qxF -- "$line" ${HOMEDIR_USER}/.profile 2>/dev/null || echo "$line" >>${HOMEDIR_USER}/.profile
+    done
+    LINES_XCOMPOSE=('# This file defines custom Compose sequences for Unicode characters' '# Import default rules from the system Compose file:' 'include "/usr/share/X11/locale/es_ES.UTF-8/Compose"')
+    for line in "${LINES_XCOMPOSE[@]}"; do
+        grep -qxF -- "$line" ${HOMEDIR_USER}/.XCompose 2>/dev/null || echo "$line" >>${HOMEDIR_USER}/.XCompose
+    done
+    chown $USERNAME:$USERNAME "${HOMEDIR_USER}/.XCompose"
+    chown $USERNAME:$USERNAME "${HOMEDIR_USER}/.profile"
+fi
 
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 if [[ -n ${USERNAME+x} ]]; then
