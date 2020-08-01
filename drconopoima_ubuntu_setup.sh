@@ -79,6 +79,7 @@ help_text() {
     printf "    --ufw: Install UFW firewall and set up the following default rules: deny incoming, allow outgoing, allow localhost 22, 3306 (mysql), 5432 (postgresql), 80 (http), 443 (https).\n"
     printf "    --docker-ce: Install Docker Community Edition (ensures removal of any docker dependency from APT package manager)\n"
     printf "    --calibre: Install Calibre EBook Reading Software.\n"
+    printf "    --pyenv: Install Pyenv Python Version Management by using project pyenv-installer.\n"
     printf "    --user: Select user for configuration\n"
 }
 
@@ -116,7 +117,7 @@ fi
 
 readonly REST_ARGUMENTS=("${ALL_ARGUMENTS[@]:1}")
 
-CONSTANTS=('GOOGLE_CHROME' 'VSCODE' 'VSCODE_INSIDERS' 'INSTALL_PYTHON_PIP' 'LOCAL_PIP' 'PYTHON_USER' 'INSTALL_GIT' 'GIT_USER_NAME' 'GIT_USER_EMAIL' 'REMOVE_GLOBAL_PIP' 'INSTALL_UFW' 'NEW_SSH_PORT' 'VALIDATE_SSH_PORT' 'DOCKER_CE' 'CALIBRE')
+CONSTANTS=('GOOGLE_CHROME' 'VSCODE' 'VSCODE_INSIDERS' 'INSTALL_PYTHON_PIP' 'LOCAL_PIP' 'PYTHON_USER' 'INSTALL_GIT' 'GIT_USER_NAME' 'GIT_USER_EMAIL' 'REMOVE_GLOBAL_PIP' 'INSTALL_UFW' 'NEW_SSH_PORT' 'VALIDATE_SSH_PORT' 'DOCKER_CE' 'CALIBRE' 'pyenv')
 
 skip_argument=0
 if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
@@ -157,6 +158,10 @@ if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
             --vscode-insiders)
                 VSCODE_INSIDERS=1
                 shift # Remove --vscode= from processing
+                ;;
+            --pyenv)
+                PYENV=1
+                shift
                 ;;
             --python-pip)
                 INSTALL_PYTHON_PIP=1
@@ -290,6 +295,10 @@ if [[ -n ${INSTALL_PYTHON_PIP+x} ]]; then
     packages_to_install+=('git')
 fi
 
+if [[ -n ${PYENV+x} ]]; then
+    packages_to_install+=('make' 'build-essential' 'libssl-dev' 'zlib1g-dev' 'libbz2-dev' 'libreadline-dev' 'libsqlite3-dev' 'wget' 'curl' 'llvm' 'libncurses5-dev' 'xz-utils' 'libxml2-dev' 'libxmlsec1-dev' 'libffi-dev' 'liblzma-dev' 'tk-dev')
+fi
+
 if [[ -n ${REMOVE_GLOBAL_PIP+x} ]]; then
     if [[ "${ubuntu_version}" -eq "20.04" ]]; then
         packages_to_remove+=('python3-pip')
@@ -303,7 +312,7 @@ if [[ -n ${INSTALL_UFW+x} ]]; then
 fi
 
 if [[ -n ${VSCODE+x} || -n ${VSCODE_INSIDERS+x} || -n ${DOCKER_CE+x} || -n ${GOOGLE_CHROME+x} || -n ${CALIBRE+x} ]]; then
-    packages_to_install+=('curl coreutils apt-transport-https ca-certificates wget gnupg-agent software-properties-common xdg-utils xz-utils')
+    packages_to_install+=('curl coreutils apt-transport-https ca-certificates wget gnupg-agent software-properties-common xdg-utils xz-utils' 'tk-dev')
 fi
 
 add-apt-repository universe
@@ -432,6 +441,10 @@ fi
 
 if [[ -n ${CALIBRE+x} ]]; then
     wget -nv -O- https://download.calibre-ebook.com/linux-installer.sh | sh /dev/stdin install_dir=/opt
+fi
+
+if [[ -n ${PYENV+x} ]]; then
+    curl -s -S -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash -e
 fi
 
 DEBIAN_FRONTEND=noninteractive apt-get remove -y ${packages_to_remove[@]}
