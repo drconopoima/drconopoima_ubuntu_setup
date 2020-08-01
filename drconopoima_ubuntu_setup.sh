@@ -3,7 +3,7 @@
 # Quick from scratch setup script of an Ubuntu machine
 # Optional Dependency: Auxiliary vimrc/bashrc/bash_aliases accompanying files
 # set -n
-set -uo pipefail
+set -Eeuo pipefail
 # Sourced from `man bash`
 # set -E | set -o errtrace:  If set, any trap on ERR is inherited by shell functions
 # set -u | set -o nounset: Treat unset variables and parameters (except "@" and "*") as an  error  when performing parameter expansion.
@@ -19,7 +19,7 @@ set -uo pipefail
 # * Tom Van Eyck: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 
 readonly SCRIPT_NAME="$0"
-readonly SCRIPT_VERSION='1.0.0'
+readonly SCRIPT_VERSION='1.1.0'
 
 script_name() {
     printf "${SCRIPT_NAME}: (v${SCRIPT_VERSION})\n"
