@@ -322,6 +322,11 @@ apt-get update
 
 DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y
 
+# Accept Virtualbox License
+if [[ " ${packages_to_install[@]} " =~ " virtualbox-ext-pack " ]]; then
+    echo virtualbox-ext-pack virtualbox-ext-pack/license select true | debconf-set-selections
+fi
+
 DEBIAN_FRONTEND=noninteractive apt-get install -y ${packages_to_install[@]}
 
 if [[ -n ${GIT_USER_NAME+x} ]]; then
