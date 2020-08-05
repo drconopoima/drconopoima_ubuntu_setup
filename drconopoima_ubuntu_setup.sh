@@ -42,7 +42,7 @@ lsof colormake most nocache jpegoptim mmv qpdf rename pgadmin3 postgresql \
 asciinema fail2ban dsniff ecryptfs-utils cryptsetup mariadb-server mariadb-client \
 zsh autojump dolphin-plugins postgresql-contrib openjdk-8-jre mesa-utils \
 rtl8821ce-dkms bc module-assistant tldr fd-find imagemagick source-highlight \
-command-not-found tree ncdu fzf aptitude"
+command-not-found tree ncdu fzf aptitude shellcheck"
 
 readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="helm"
 readonly DEFAULT_SNAP_PACKAGES_INSTALL=""
