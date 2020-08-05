@@ -42,10 +42,10 @@ lsof colormake most nocache jpegoptim mmv qpdf rename pgadmin3 postgresql \
 asciinema fail2ban dsniff ecryptfs-utils cryptsetup mariadb-server mariadb-client \
 zsh autojump dolphin-plugins postgresql-contrib openjdk-8-jre mesa-utils \
 rtl8821ce-dkms bc module-assistant tldr fd-find imagemagick source-highlight \
-command-not-found tree ncdu fzf aptitude shellcheck p7zip-full"
+command-not-found tree ncdu fzf aptitude p7zip-full"
 
 readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="helm"
-readonly DEFAULT_SNAP_PACKAGES_INSTALL=""
+readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck"
 readonly DEFAULT_FLATPAK_PACKAGES_INSTALL="org.libreoffice.LibreOffice"
 
 DEFAULT_PACKAGES_TO_REMOVE="gstreamer1.0-fluendo-mp3 telnetd"
@@ -507,6 +507,10 @@ fi
 
 if [[ -n ${DEFAULT_SNAP_PACKAGES_INSTALL} ]]; then
     snap install ${DEFAULT_SNAP_PACKAGES_INSTALL}
+fi
+
+if [[ $DEFAULT_SNAP_PACKAGES_INSTALL =~ "shellcheck" ]]; then
+    ln -s -T /snap/bin/shellcheck /usr/local/bin/shellcheck;
 fi
 
 if [[ -n ${INSTALL_PYTHON_PIP+x} ]]; then
