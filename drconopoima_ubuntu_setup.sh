@@ -380,12 +380,18 @@ if [[ -n ${CHANGE_SSH_PORT+x} ]]; then
 fi
 
 readonly ufwsectionlockfile="/var/lock/$SCRIPT_NAME.ufw.lock"
+ufwsection_unlock() {
+    returncode=$?;
+    rm -f "${ufwsectionlockfile}";
+    exit ${returncode};
+}
+readonly -f ufwsection_unlock
 if [[ -n ${INSTALL_UFW+x} ]]; then
     if (
         set -o noclobber
         echo "$$" >"$ufwsectionlockfile"
     ) 2>/dev/null; then
-        trap "rm -f '$ufwsectionlockfile'; exit $?" INT TERM EXIT
+        trap "ufwsection_unlock" INT TERM EXIT
         ufw --force reset
         ufw default deny incoming
         ufw default allow outgoing
@@ -411,7 +417,7 @@ if [[ -n ${INSTALL_UFW+x} ]]; then
         ufw allow out on lo to 0.0.0.0 port 5432
         ufw --force disable
         ufw --force enable
-        rm -f $ufwsectionlockfile
+        rm -f "${ufwsectionlockfile}"
         trap - INT TERM EXIT
     else
         echo "Failed to acquire lockfile: Held by $ufwsectionlockfile."
