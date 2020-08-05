@@ -291,7 +291,7 @@ if [[ -n ${VALIDATE_SSH_PORT+x} ]]; then
 fi
 
 if [[ -n ${INSTALL_PYTHON_PIP+x} ]]; then
-    if [[ "${ubuntu_version}" =~ "20.04" ]]; then
+    if [[ "${ubuntu_version}" =~ 20.04 ]]; then
         packages_to_install+=('python2' 'python3-pip' 'python3-venv')
     else
         packages_to_install+=('python-pip' 'python3-pip' 'python3-venv')
@@ -307,7 +307,7 @@ if [[ -n ${PYENV+x} ]]; then
 fi
 
 if [[ -n ${REMOVE_GLOBAL_PIP+x} ]]; then
-    if [[ "${ubuntu_version}" -eq "20.04" ]]; then
+    if [[ "${ubuntu_version}" == "20.04" ]]; then
         packages_to_remove+=('python3-pip')
     else
         packages_to_remove+=('python-pip' 'python3-pip')
@@ -510,7 +510,7 @@ if [[ -n ${DEFAULT_SNAP_PACKAGES_INSTALL} ]]; then
 fi
 
 if [[ -n ${INSTALL_PYTHON_PIP+x} ]]; then
-    if [[ "${ubuntu_version}" =~ "20.04" ]]; then
+    if [[ "${ubuntu_version}" =~ 20.04 ]]; then
         curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
         python2 get-pip.py
     fi
