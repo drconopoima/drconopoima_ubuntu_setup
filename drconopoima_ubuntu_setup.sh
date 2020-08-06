@@ -510,7 +510,7 @@ if [[ -n ${DEFAULT_SNAP_PACKAGES_INSTALL} ]]; then
 fi
 
 if [[ $DEFAULT_SNAP_PACKAGES_INSTALL =~ "shellcheck" ]]; then
-    ln -s -T /snap/bin/shellcheck /usr/local/bin/shellcheck;
+    ln -s -T /snap/bin/shellcheck /usr/bin/shellcheck;
 fi
 
 if [[ -n ${INSTALL_PYTHON_PIP+x} ]]; then
