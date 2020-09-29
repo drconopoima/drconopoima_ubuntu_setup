@@ -43,7 +43,9 @@ asciinema fail2ban dsniff ecryptfs-utils cryptsetup mariadb-server mariadb-clien
 zsh autojump dolphin-plugins postgresql-contrib openjdk-8-jre mesa-utils \
 rtl8821ce-dkms bc module-assistant tldr fd-find imagemagick source-highlight \
 command-not-found tree ncdu fzf aptitude p7zip-full python3-docutils traceroute \
-iproute2 htop gddrescue"
+iproute2 htop gddrescue libipmimonitoring-dev libjson-c-dev libmongoc-dev \
+libsnappy-dev libprotobuf-dev libprotoc-dev protobuf-compiler libnfnetlink-dev \
+libnetfilter-acct-dev uuid-dev gcc autoconf automake pkg-config"
 
 readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="helm"
 readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck"
