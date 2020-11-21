@@ -48,7 +48,7 @@ libsnappy-dev libprotobuf-dev libprotoc-dev protobuf-compiler libnfnetlink-dev \
 libnetfilter-acct-dev uuid-dev gcc autoconf automake pkg-config smartmontools \
 xfsdump"
 
-readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="helm"
+readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="helm rustup"
 readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck"
 readonly DEFAULT_FLATPAK_PACKAGES_INSTALL="org.libreoffice.LibreOffice"
 
@@ -507,6 +507,11 @@ fi
 
 if [[ $DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC =~ "helm" ]]; then
     snap run helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+fi
+
+if [[ $DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC =~ "rustup" ]]; then
+    sudo -u $USERNAME rustup install stable
+    sudo -u $USERNAME rustup default stable
 fi
 
 if [[ -n ${DEFAULT_SNAP_PACKAGES_INSTALL} ]]; then
