@@ -522,13 +522,6 @@ if [[ $DEFAULT_SNAP_PACKAGES_INSTALL =~ "shellcheck" ]]; then
     ln -s -T /snap/bin/shellcheck /usr/bin/shellcheck;
 fi
 
-if [[ -n ${INSTALL_PYTHON_PIP+x} ]]; then
-    if [[ "${ubuntu_version}" =~ "20.04" ]]; then
-        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-        python2 get-pip.py
-    fi
-fi
-
 ## Apache Example: batch apply atomic changes in directory
 # cp -a /var/www /var/www-tmp
 # find /var/www-tmp -type f -name "*.html" -print0 | xargs -0 perl -pi -e 's/.conf/.com/'
