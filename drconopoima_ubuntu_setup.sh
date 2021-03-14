@@ -46,7 +46,7 @@ command-not-found tree ncdu fzf aptitude p7zip-full python3-docutils traceroute 
 iproute2 htop gddrescue libipmimonitoring-dev libjson-c-dev libmongoc-dev \
 libsnappy-dev libprotobuf-dev libprotoc-dev protobuf-compiler libnfnetlink-dev \
 libnetfilter-acct-dev uuid-dev gcc autoconf automake pkg-config smartmontools \
-xfsdump sshpass"
+xfsdump sshpass linux-tools-generic"
 
 readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="helm rustup go"
 readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck"
