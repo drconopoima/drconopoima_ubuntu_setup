@@ -47,7 +47,7 @@ iproute2 htop gddrescue libipmimonitoring-dev libjson-c-dev libmongoc-dev \
 libsnappy-dev libprotobuf-dev libprotoc-dev protobuf-compiler libnfnetlink-dev \
 libnetfilter-acct-dev uuid-dev gcc autoconf automake pkg-config smartmontools \
 xfsdump sshpass linux-tools-generic wireshark ethtool tshark perf-tools-unstable \
-bpfcc-tools"
+bpfcc-tools sshpass pssh"
 
 readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="helm rustup go"
 readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck"
