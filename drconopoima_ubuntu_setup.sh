@@ -50,7 +50,7 @@ xfsdump sshpass linux-tools-generic wireshark ethtool tshark perf-tools-unstable
 bpfcc-tools sshpass pssh"
 
 readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="helm rustup go"
-readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck"
+readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck yq"
 readonly DEFAULT_FLATPAK_PACKAGES_INSTALL="org.libreoffice.LibreOffice"
 
 DEFAULT_PACKAGES_TO_REMOVE="gstreamer1.0-fluendo-mp3 telnetd"
