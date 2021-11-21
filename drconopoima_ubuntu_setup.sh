@@ -49,7 +49,7 @@ libnetfilter-acct-dev uuid-dev gcc autoconf automake pkg-config smartmontools \
 xfsdump sshpass linux-tools-generic wireshark ethtool tshark perf-tools-unstable \
 bpfcc-tools sshpass pssh cgroup-tools"
 
-readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="helm rustup go"
+readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="helm rustup go flutter"
 readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck yq"
 readonly DEFAULT_FLATPAK_PACKAGES_INSTALL="org.libreoffice.LibreOffice"
 
