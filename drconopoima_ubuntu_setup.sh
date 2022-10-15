@@ -49,7 +49,7 @@ xfsdump sshpass linux-tools-generic wireshark ethtool tshark perf-tools-unstable
 bpfcc-tools sshpass pssh cgroup-tools pass"
 
 readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="rustup go aws-cli google-cloud-cli"
-readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck yq libreoffice"
+readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck yq libreoffice k6"
 readonly DEFAULT_FLATPAK_PACKAGES_INSTALL=""
 
 DEFAULT_PACKAGES_TO_REMOVE="gstreamer1.0-fluendo-mp3 telnetd"
