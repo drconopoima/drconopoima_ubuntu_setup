@@ -30,28 +30,27 @@ readonly -f script_name
 script_name
 
 readonly DEFAULT_PACKAGES_TO_INSTALL="curl wget vim-gtk3 neovim bat ufw git make \
-build-essential default-jdk default-jre bleachbit vlc flatpak \
+build-essential bleachbit vlc flatpak \
 glances atop libssl-dev zlib1g-dev libbz2-dev libreadline-dev \
 libsqlite3-dev llvm libncurses5-dev libncursesw5-dev xz-utils libffi-dev \
-liblzma-dev python-openssl virtualbox vagrant virtualbox-ext-pack krita ibus \
+liblzma-dev virtualbox vagrant virtualbox-ext-pack krita ibus \
 netcat-openbsd snapd libnotify-bin hwinfo tcpdump gawk fonts-opensymbol \
-kubuntu-restricted-extras kubuntu-restricted-addons kubuntu-wallpapers \
 plasma-workspace-wallpapers coreutils apt-file telnet openssh-client \
-openssh-server gpg net-tools exfat-fuse exfat-utils jq tmux maven sqlite3 \
-lsof colormake most nocache jpegoptim mmv qpdf rename pgadmin3 postgresql \
+openssh-server gpg net-tools exfat-fuse jq tmux maven sqlite3 \
+lsof colormake most nocache jpegoptim mmv qpdf rename postgresql \
 asciinema fail2ban dsniff ecryptfs-utils cryptsetup mariadb-server mariadb-client \
-zsh autojump dolphin-plugins postgresql-contrib openjdk-8-jre mesa-utils \
-rtl8821ce-dkms bc module-assistant tldr fd-find imagemagick source-highlight \
+zsh autojump dolphin-plugins postgresql-contrib \
+bc module-assistant tldr fd-find imagemagick source-highlight \
 command-not-found tree ncdu fzf aptitude p7zip-full python3-docutils traceroute \
 iproute2 htop gddrescue libipmimonitoring-dev libjson-c-dev libmongoc-dev \
 libsnappy-dev libprotobuf-dev libprotoc-dev protobuf-compiler libnfnetlink-dev \
 libnetfilter-acct-dev uuid-dev gcc autoconf automake pkg-config smartmontools \
 xfsdump sshpass linux-tools-generic wireshark ethtool tshark perf-tools-unstable \
-bpfcc-tools sshpass pssh cgroup-tools"
+bpfcc-tools sshpass pssh cgroup-tools pass"
 
-readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="helm rustup go flutter"
-readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck yq"
-readonly DEFAULT_FLATPAK_PACKAGES_INSTALL="org.libreoffice.LibreOffice"
+readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="rustup go aws-cli google-cloud-cli"
+readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck yq libreoffice"
+readonly DEFAULT_FLATPAK_PACKAGES_INSTALL=""
 
 DEFAULT_PACKAGES_TO_REMOVE="gstreamer1.0-fluendo-mp3 telnetd"
 
@@ -433,9 +432,9 @@ if [[ -n ${GOOGLE_CHROME+x} ]]; then
 fi
 
 if [[ -n ${VSCODE+x} || -n ${VSCODE_INSIDERS+x} ]]; then
-    curl -q https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor >packages.microsoft.gpg
-    install -o root -g root -m 644 packages.microsoft.gpg /usr/share/keyrings/
-    sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list'
+    curl -qs https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor >archive_uri-https_packages_microsoft_com_keys_microsoft-asc.gpg
+    install -o root -g root -m 644 archive_uri-https_packages_microsoft_com_keys_microsoft-asc.gpg /usr/share/keyrings/
+    sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/archive_uri-https_packages_microsoft_com_keys_microsoft-asc.gpg arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/archive_uri-https_packages_microsoft_com_keys_microsoft-asc.list'
 fi
 
 if [[ -n ${VSCODE+x} ]]; then
@@ -450,8 +449,8 @@ fi
 
 if [[ -n ${DOCKER_CE+x} ]]; then
     DEBIAN_FRONTEND=noninteractive apt-get remove -y docker docker-engine docker.io containerd runc
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-    apt-key fingerprint 0EBFCD88 | wc -l | grep -v 0 &>/dev/null && DEBIAN_FRONTEND=noninteractive add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor | tee /usr/share/keyrings/archive_uri-https_download_docker_com_linux_ubuntu-$(lsb_release -cs).gpg 1>/dev/null
+    sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/archive_uri-https_download_docker_com_linux_ubuntu-$(lsb_release -cs).gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/archive_uri-https_download_docker_com_linux_ubuntu-$(lsb_release -cs).list'
     apt-get update
     DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io
     if [[ -n ${USERNAME+x} ]]; then
@@ -481,12 +480,12 @@ DEBIAN_FRONTEND=noninteractive apt-get remove -y ${packages_to_remove[@]}
 # Source with longer explanation here: http://canonical.org/~kragen/setting-up-keyboard.html
 # Useful XCompose GitHub here: https://github.com/kragen/XCompose
 if [[ -n ${USERNAME+x} ]]; then
-    sudo -u $USERNAME /usr/bin/setxkbmap -option compose:rctrl
-    LINES_PROFILE=('# Enable custom Compose sequences on login' '/usr/bin/setxkbmap -option compose:rctrl')
+    sudo -u $USERNAME /usr/bin/setxkbmap -option compose:lwin
+    LINES_PROFILE=('# Enable custom Compose sequences on login' '/usr/bin/setxkbmap -option compose:lwin')
     for line in "${LINES_PROFILE[@]}"; do
         grep -qxF -- "$line" ${HOMEDIR_USER}/.profile 2>/dev/null || echo "$line" >>${HOMEDIR_USER}/.profile
     done
-    LINES_XCOMPOSE=('# This file defines custom Compose sequences for Unicode characters' '# Import default rules from the system Compose file:' 'include "/usr/share/X11/locale/es_ES.UTF-8/Compose"')
+    LINES_XCOMPOSE=('# This file defines custom Compose sequences for Unicode characters' '# Import default rules from the system Compose file:' 'include "/usr/share/X11/locale/en_US.UTF-8/Compose"')
     for line in "${LINES_XCOMPOSE[@]}"; do
         grep -qxF -- "$line" ${HOMEDIR_USER}/.XCompose 2>/dev/null || echo "$line" >>${HOMEDIR_USER}/.XCompose
     done
@@ -498,7 +497,8 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 if [[ -n ${USERNAME+x} ]]; then
     sudo -u ${USERNAME} flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     sudo -u ${USERNAME} flatpak install -y --user ${DEFAULT_FLATPAK_PACKAGES_INSTALL}
-else
+fi
+if [[ -n ${DEFAULT_FLATPAK_PACKAGES_INSTALL} ]]; then
     flatpak install -y ${DEFAULT_FLATPAK_PACKAGES_INSTALL}
 fi
 
