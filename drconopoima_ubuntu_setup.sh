@@ -30,7 +30,7 @@ readonly -f script_name
 script_name
 
 readonly DEFAULT_PACKAGES_TO_INSTALL="curl wget vim-gtk3 neovim bat ufw git make \
-build-essential bleachbit vlc flatpak smokeping \
+build-essential bleachbit vlc flatpak smokeping nmap \
 glances atop libssl-dev zlib1g-dev libbz2-dev libreadline-dev \
 libsqlite3-dev llvm libncurses5-dev libncursesw5-dev xz-utils libffi-dev \
 liblzma-dev virtualbox vagrant virtualbox-ext-pack krita ibus \
