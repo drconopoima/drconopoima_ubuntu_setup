@@ -525,7 +525,7 @@ if [[ -n ${USERNAME+x} ]]; then
     chown $USERNAME:$USERNAME "${HOMEDIR_USER}/.profile"
 fi
 
-if 
+if [[ " ${packages_to_install[@]} " =~ " flatpak " ]]; then
     flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     if [[ -n ${USERNAME+x} ]]; then
         sudo -u ${USERNAME} flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -534,6 +534,7 @@ if
     if [[ -n ${DEFAULT_FLATPAK_PACKAGES_INSTALL} ]]; then
         flatpak install -y ${DEFAULT_FLATPAK_PACKAGES_INSTALL}
     fi
+fi
 
 if [[ -n ${DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC} ]]; then
     snap install --classic ${DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC}
