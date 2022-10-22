@@ -19,10 +19,10 @@ set -Eeuo pipefail
 # * Tom Van Eyck: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 
 readonly SCRIPT_NAME="$0"
-readonly SCRIPT_VERSION='1.1.0'
+readonly SCRIPT_VERSION='1.2.0'
 
 script_name() {
-    printf "${SCRIPT_NAME}: (v${SCRIPT_VERSION})\n"
+    printf "%s: (v%s)\n" "${SCRIPT_NAME}" "${SCRIPT_VERSION}"
 }
 
 readonly -f script_name
@@ -49,7 +49,7 @@ xfsdump sshpass linux-tools-generic wireshark ethtool tshark perf-tools-unstable
 bpfcc-tools sshpass pssh cgroup-tools pass"
 
 readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="rustup go aws-cli google-cloud-cli"
-readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck yq libreoffice k6"
+readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck yq libreoffice k6 chromium"
 readonly DEFAULT_FLATPAK_PACKAGES_INSTALL=""
 
 DEFAULT_PACKAGES_TO_REMOVE="gstreamer1.0-fluendo-mp3 telnetd"
@@ -59,8 +59,8 @@ packages_to_install=("${DEFAULT_PACKAGES_TO_INSTALL}")
 packages_to_remove=("${DEFAULT_PACKAGES_TO_REMOVE}")
 
 usage_text() {
-    printf "Usage: ${SCRIPT_NAME} <ubuntu_version> --user <username> [--packages=*][--optional-flags: --google-chrome|--vscode]\n"
-    printf "Example: ${SCRIPT_NAME} 20.04  --user <username> --packages='neovim golang bleachbit'\n"
+    printf "Usage: %s <ubuntu_version> --user <username> [--packages=*][--optional-flags: --google-chrome|--vscode]\n" "${SCRIPT_NAME}"
+    printf "Example: %s 20.04  --user <username> --packages='neovim golang bleachbit'\n" "${SCRIPT_NAME}"
 }
 
 readonly -f usage_text
@@ -85,6 +85,8 @@ help_text() {
     printf "    --calibre: Install Calibre EBook Reading Software.\n"
     printf "    --pyenv: Install Pyenv Python Version Management by using project pyenv-installer.\n"
     printf "    --user: Select user for configuration\n"
+    printf "    --crystal: Install crystal programming language\n"
+    printf "    --widevine: Install widevine DRM library for Chromium Browser (add Chromium to snap package list)\n"
 }
 
 readonly -f help_text
@@ -101,17 +103,15 @@ readonly ALL_ARGUMENTS=("$@")
 readonly ARGUMENT1="${ALL_ARGUMENTS[0]}"
 
 # Print help on -h/--help
-for argument in "${ARGUMENT1}"; do
-    case "${argument}" in
-    -h | --help)
-        help_text
-        exit 0
-        ;;
-    *)
-        ubuntu_version="${argument}"
-        ;;
-    esac
-done
+case "${ARGUMENT1}" in
+-h | --help)
+    help_text
+    exit 0
+    ;;
+*)
+    ubuntu_version="${argument}"
+    ;;
+esac
 
 # Check for root user
 if [[ "${EUID}" -ne 0 ]]; then
@@ -121,7 +121,7 @@ fi
 
 readonly REST_ARGUMENTS=("${ALL_ARGUMENTS[@]:1}")
 
-CONSTANTS=('GOOGLE_CHROME' 'VSCODE' 'VSCODE_INSIDERS' 'INSTALL_PYTHON_PIP' 'LOCAL_PIP' 'PYTHON_USER' 'INSTALL_GIT' 'GIT_USER_NAME' 'GIT_USER_EMAIL' 'REMOVE_GLOBAL_PIP' 'INSTALL_UFW' 'NEW_SSH_PORT' 'VALIDATE_SSH_PORT' 'DOCKER_CE' 'CALIBRE' 'pyenv')
+CONSTANTS=('GOOGLE_CHROME' 'VSCODE' 'VSCODE_INSIDERS' 'INSTALL_PYTHON_PIP' 'LOCAL_PIP' 'PYTHON_USER' 'INSTALL_GIT' 'GIT_USER_NAME' 'GIT_USER_EMAIL' 'REMOVE_GLOBAL_PIP' 'INSTALL_UFW' 'NEW_SSH_PORT' 'VALIDATE_SSH_PORT' 'DOCKER_CE' 'CALIBRE' 'pyenv' 'USERNAME' 'CRYSTAL' 'WIDEVINE')
 
 skip_argument=0
 if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
@@ -134,13 +134,13 @@ if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
             case ${argument} in
             # Handle --packages=value
             --packages=*)
-                packages=("${argument#*=}")
+                packages_to_install=("${argument#*=}")
                 shift # Remove --packages=* from processing
                 ;;
             # Handle --packages value
             --packages)
                 shift
-                packages=("$2")
+                packages_to_install=("$2")
                 skip_argument=1
                 ;;
             --google-chrome)
@@ -176,7 +176,7 @@ if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
                 REMOVE_GLOBAL_PIP=1
                 LOCAL_PIP=1
                 for user in ${argument#*=}; do
-                    PYTHON_USER+=($user)
+                    PYTHON_USER+=("$user")
                 done
                 shift # Remove --local-pip=* from processing
                 ;;
@@ -186,7 +186,7 @@ if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
                 REMOVE_GLOBAL_PIP=1
                 LOCAL_PIP=1
                 for user in $2; do
-                    PYTHON_USER+=($user)
+                    PYTHON_USER+=("$user")
                 done
                 skip_argument=1
                 ;;
@@ -222,14 +222,14 @@ if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
                 ;;
             --clean-packages=*)
                 for package in ${argument#*=}; do
-                    packages_to_remove+=($package)
+                    packages_to_remove+=("$package")
                 done
                 shift
                 ;;
             --clean-packages)
                 shift
                 for package in $2; do
-                    packages_to_remove+=($package)
+                    packages_to_remove+=("$package")
                 done
                 skip_argument=1
                 ;;
@@ -256,6 +256,15 @@ if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
                 shift
                 USERNAME="$2"
                 skip_argument=1
+                ;;            
+            --crystal)
+                CRYSTAL=1
+                shift
+                ;;
+            
+            --widevine)
+                WIDEVINE=1
+                shift
                 ;;
             *)
                 echo "Error: unrecognized option ${argument#*=}"
@@ -269,15 +278,15 @@ if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
     done
 fi
 
-for constant in ${CONSTANTS[@]}; do
-    readonly ${constant}
+for constant in "${CONSTANTS[@]}"; do
+    readonly "${constant}"
 done
 
 if [[ -n ${USERNAME+x} ]]; then
-    HOMEDIR_USER="$(getent passwd $USERNAME | awk -F ':' '{print $6}')"
+    HOMEDIR_USER="$(getent passwd "$USERNAME" | awk -F ':' '{print $6}')"
 fi
 
-if [[ -n ${GIT_USER_NAME+x} && ! -n ${USERNAME+x} || ${GIT_USER_EMAIL+x} && ! -n ${USERNAME+x} ]]; then
+if [[ -n ${GIT_USER_NAME+x} && -z ${USERNAME+x} || ${GIT_USER_EMAIL+x} && -z ${USERNAME+x} ]]; then
     echo "Argument Error: You need to specify a system user for whom to configure Git identity."
     exit 1
 fi
@@ -295,14 +304,14 @@ if [[ -n ${VALIDATE_SSH_PORT+x} ]]; then
 fi
 
 if [[ -n ${INSTALL_PYTHON_PIP+x} ]]; then
-    if [[ "${ubuntu_version}" =~ "20.04" ]]; then
+    if [[ "${ubuntu_version}" =~ 2[02].04 ]]; then
         packages_to_install+=('python2' 'python3-pip' 'python3-venv')
     else
         packages_to_install+=('python-pip' 'python3-pip' 'python3-venv')
     fi
 fi
 
-if [[ -n ${INSTALL_PYTHON_PIP+x} ]]; then
+if [[ -n ${INSTALL_GIT+x} ]]; then
     packages_to_install+=('git')
 fi
 
@@ -310,8 +319,9 @@ if [[ -n ${PYENV+x} ]]; then
     packages_to_install+=('make' 'build-essential' 'libssl-dev' 'zlib1g-dev' 'libbz2-dev' 'libreadline-dev' 'libsqlite3-dev' 'wget' 'curl' 'llvm' 'libncurses5-dev' 'xz-utils' 'libxml2-dev' 'libxmlsec1-dev' 'libffi-dev' 'liblzma-dev' 'tk-dev')
 fi
 
+
 if [[ -n ${REMOVE_GLOBAL_PIP+x} ]]; then
-    if [[ "${ubuntu_version}" -eq "20.04" ]]; then
+    if [[ "${ubuntu_version}" =~ 2[02].04 ]]; then
         packages_to_remove+=('python3-pip')
     else
         packages_to_remove+=('python-pip' 'python3-pip')
@@ -322,8 +332,8 @@ if [[ -n ${INSTALL_UFW+x} ]]; then
     packages_to_install+=('ufw')
 fi
 
-if [[ -n ${VSCODE+x} || -n ${VSCODE_INSIDERS+x} || -n ${DOCKER_CE+x} || -n ${GOOGLE_CHROME+x} || -n ${CALIBRE+x} ]]; then
-    packages_to_install+=('curl coreutils apt-transport-https ca-certificates wget gnupg-agent software-properties-common xdg-utils xz-utils' 'tk-dev')
+if [[ -n ${VSCODE+x} || -n ${VSCODE_INSIDERS+x} || -n ${DOCKER_CE+x} || -n ${GOOGLE_CHROME+x} || -n ${CALIBRE+x} || -n ${WIDEVINE} || -n ${CRYSTAL} ]]; then
+    packages_to_install+=('curl' 'coreutils' 'apt-transport-https' 'ca-certificates' 'wget' 'gnupg-agent' 'software-properties-common' 'xdg-utils' 'xz-utils' 'tk-dev')
 fi
 
 add-apt-repository universe
@@ -334,18 +344,26 @@ apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y
 
 # Accept Virtualbox License
-if [[ " ${packages_to_install[@]} " =~ " virtualbox-ext-pack " ]]; then
+if [[ " ${packages_to_install[*]} " =~ " virtualbox-ext-pack " ]]; then
     echo virtualbox-ext-pack virtualbox-ext-pack/license select true | debconf-set-selections
 fi
 
-DEBIAN_FRONTEND=noninteractive apt-get install -y ${packages_to_install[@]}
+DEBIAN_FRONTEND=noninteractive apt-get install -y "${packages_to_install[@]}"
 
-if [[ -n ${GIT_USER_NAME+x} ]]; then
-    sudo -u $USERNAME git config --global user.name "${GIT_USER_NAME}"
+if [[ -n ${LOCAL_PIP+x} ]]; then
+    if [[ "${ubuntu_version}" =~ 2[02].04 ]]; then
+        sudo -u "$USERNAME" python3 -m pip install --user --upgrade pip
+    fi
 fi
 
-if [[ -n ${GIT_USER_EMAIL+x} ]]; then
-    sudo -u $USERNAME git config --global user.email "${GIT_USER_EMAIL}"
+if [[ -n ${INSTALL_GIT+x} ]]; then
+    if [[ -n ${GIT_USER_NAME+x} ]]; then
+        sudo -u "$USERNAME" git config --global user.name "${GIT_USER_NAME}"
+    fi
+
+    if [[ -n ${GIT_USER_EMAIL+x} ]]; then
+        sudo -u "$USERNAME" git config --global user.email "${GIT_USER_EMAIL}"
+    fi
 fi
 
 readonly SSHD_CONFIG_FILE="/etc/ssh/sshd_config"
@@ -389,14 +407,14 @@ if [[ -n ${INSTALL_UFW+x} ]]; then
         set -o noclobber
         echo "$$" >"$ufwsectionlockfile"
     ) 2>/dev/null; then
-        trap "rm -f '$ufwsectionlockfile'; exit $?" INT TERM EXIT
+        trap 'rm -f '"$ufwsectionlockfile"'; exit $?' INT TERM EXIT
         ufw --force reset
         ufw default deny incoming
         ufw default allow outgoing
         # SSH
         if [[ -n ${current_ssh_port+x} ]]; then
-            ufw allow in on lo to 0.0.0.0 port ${current_ssh_port}
-            ufw allow out on lo to 0.0.0.0 port ${current_ssh_port}
+            ufw allow in on lo to 0.0.0.0 port "${current_ssh_port}"
+            ufw allow out on lo to 0.0.0.0 port "${current_ssh_port}"
         else
             ufw allow in on lo to 0.0.0.0 port 22
             ufw allow out on lo to 0.0.0.0 port 22
@@ -415,7 +433,7 @@ if [[ -n ${INSTALL_UFW+x} ]]; then
         ufw allow out on lo to 0.0.0.0 port 5432
         ufw --force disable
         ufw --force enable
-        rm -f $ufwsectionlockfile
+        rm -f "$ufwsectionlockfile"
         trap - INT TERM EXIT
     else
         echo "Failed to acquire lockfile: Held by $ufwsectionlockfile."
@@ -424,10 +442,10 @@ fi
 
 if [[ -n ${GOOGLE_CHROME+x} ]]; then
     TEMP_GOOGLE_CHROME_DEB="$(mktemp).deb"
-    trap "rm -f '$TEMP_GOOGLE_CHROME_DEB'; exit $?" INT TERM EXIT
+    trap 'rm -f '"$TEMP_GOOGLE_CHROME_DEB"'; exit $?' INT TERM EXIT
     curl -qo "${TEMP_GOOGLE_CHROME_DEB}" 'https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb' &&
         DEBIAN_FRONTEND=noninteractive apt-get install -y "${TEMP_GOOGLE_CHROME_DEB}" &&
-        rm -f $TEMP_GOOGLE_CHROME_DEB
+        rm -f "$TEMP_GOOGLE_CHROME_DEB"
     trap - INT TERM EXIT
 fi
 
@@ -449,7 +467,7 @@ fi
 
 if [[ -n ${DOCKER_CE+x} ]]; then
     DEBIAN_FRONTEND=noninteractive apt-get remove -y docker docker-engine docker.io containerd runc
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor | tee /usr/share/keyrings/archive_uri-https_download_docker_com_linux_ubuntu-$(lsb_release -cs).gpg 1>/dev/null
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor | tee "/usr/share/keyrings/archive_uri-https_download_docker_com_linux_ubuntu-$(lsb_release -cs).gpg" 1>/dev/null
     sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/archive_uri-https_download_docker_com_linux_ubuntu-$(lsb_release -cs).gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/archive_uri-https_download_docker_com_linux_ubuntu-$(lsb_release -cs).list'
     apt-get update
     DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io
@@ -466,7 +484,28 @@ if [[ -n ${PYENV+x} ]]; then
     curl -s -S -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash -e
 fi
 
-DEBIAN_FRONTEND=noninteractive apt-get remove -y ${packages_to_remove[@]}
+if [[ -n ${CRYSTAL+x} ]]; then
+    # Download GPG Key from OpenSuse.org
+    curl -fsSL "https://download.opensuse.org/repositories/devel:languages:crystal/xUbuntu_$(lsb_release -rs)/Release.key" | gpg --dearmor | tee "/etc/apt/trusted.gpg.d/archive_uri-https_download-opensuse-org_repositories_devel-languages-crystal_xUbuntu_$(lsb_release -rs | tr '.' '-')_Release-key.gpg" > /dev/null
+    # Add repository
+    echo "deb http://download.opensuse.org/repositories/devel:/languages:/crystal/xUbuntu_$(lsb_release -rs)/ /" | sudo tee "/etc/apt/sources.list.d/archive_uri-https_download-opensuse-org_repositories_devel-languages-crystal_xUbuntu_$(lsb_release -rs | tr '.' '-').list"
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y crystal
+fi
+
+if [[ -n ${WIDEVINE+x} ]]; then
+    # Get current version
+    WIDEVINE_VERSION="$(curl -fsSL https://dl.google.com/widevine-cdm/current.txt)"
+    readonly WIDEVINE_VERSION
+    # Create chromium Library extensions folder
+    mkdir -pv /usr/lib/chromium
+    chmod -v 755 /usr/lib/chromium
+    # Download Widevine SO
+    wget -nv "https://dl.google.com/widevine-cdm/${WIDEVINE_VERSION}-linux-x64.zip" | busybox unzip -jo "${WIDEVINE_VERSION}-linux-x64.zip" libwidevinecdm.so -d /usr/lib/chromium/
+    chmod -v 644 /usr/lib/chromium/libwidevinecdm.so
+fi
+
+DEBIAN_FRONTEND=noninteractive apt-get remove -y "${packages_to_remove[@]}"
 
 ### setxkbmap
 ## Check current options
@@ -480,30 +519,32 @@ DEBIAN_FRONTEND=noninteractive apt-get remove -y ${packages_to_remove[@]}
 # Source with longer explanation here: http://canonical.org/~kragen/setting-up-keyboard.html
 # Useful XCompose GitHub here: https://github.com/kragen/XCompose
 if [[ -n ${USERNAME+x} ]]; then
-    sudo -u $USERNAME /usr/bin/setxkbmap -option compose:lwin
+    sudo -u "$USERNAME" /usr/bin/setxkbmap -option compose:lwin
     LINES_PROFILE=('# Enable custom Compose sequences on login' '/usr/bin/setxkbmap -option compose:lwin')
     for line in "${LINES_PROFILE[@]}"; do
-        grep -qxF -- "$line" ${HOMEDIR_USER}/.profile 2>/dev/null || echo "$line" >>${HOMEDIR_USER}/.profile
+        grep -qxF -- "$line" "${HOMEDIR_USER}/.profile" 2>/dev/null || echo "$line" >>"${HOMEDIR_USER}/.profile"
     done
     LINES_XCOMPOSE=('# This file defines custom Compose sequences for Unicode characters' '# Import default rules from the system Compose file:' 'include "/usr/share/X11/locale/en_US.UTF-8/Compose"')
     for line in "${LINES_XCOMPOSE[@]}"; do
-        grep -qxF -- "$line" ${HOMEDIR_USER}/.XCompose 2>/dev/null || echo "$line" >>${HOMEDIR_USER}/.XCompose
+        grep -qxF -- "$line" "${HOMEDIR_USER}/.XCompose" 2>/dev/null || echo "$line" >>"${HOMEDIR_USER}/.XCompose"
     done
-    chown $USERNAME:$USERNAME "${HOMEDIR_USER}/.XCompose"
-    chown $USERNAME:$USERNAME "${HOMEDIR_USER}/.profile"
+    chown "$USERNAME:$USERNAME" "${HOMEDIR_USER}/.XCompose"
+    chown "$USERNAME:$USERNAME" "${HOMEDIR_USER}/.profile"
 fi
 
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-if [[ -n ${USERNAME+x} ]]; then
-    sudo -u ${USERNAME} flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-    sudo -u ${USERNAME} flatpak install -y --user ${DEFAULT_FLATPAK_PACKAGES_INSTALL}
-fi
-if [[ -n ${DEFAULT_FLATPAK_PACKAGES_INSTALL} ]]; then
-    flatpak install -y ${DEFAULT_FLATPAK_PACKAGES_INSTALL}
+if [[ " ${packages_to_install[*]} " =~ " flatpak " ]]; then
+    flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    if [[ -n ${USERNAME+x} ]]; then
+        sudo -u "${USERNAME}" flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+        sudo -u "${USERNAME}" flatpak install -y --user "${DEFAULT_FLATPAK_PACKAGES_INSTALL}"
+    fi
+    if [[ -n ${DEFAULT_FLATPAK_PACKAGES_INSTALL} ]]; then
+        flatpak install -y "${DEFAULT_FLATPAK_PACKAGES_INSTALL}"
+    fi
 fi
 
 if [[ -n ${DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC} ]]; then
-    snap install --classic ${DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC}
+    snap install --classic "${DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC}"
 fi
 
 if [[ $DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC =~ "helm" ]]; then
@@ -511,12 +552,12 @@ if [[ $DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC =~ "helm" ]]; then
 fi
 
 if [[ $DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC =~ "rustup" ]]; then
-    sudo -u $USERNAME rustup install stable
-    sudo -u $USERNAME rustup default stable
+    sudo -u "$USERNAME" rustup install stable
+    sudo -u "$USERNAME" rustup default stable
 fi
 
 if [[ -n ${DEFAULT_SNAP_PACKAGES_INSTALL} ]]; then
-    snap install ${DEFAULT_SNAP_PACKAGES_INSTALL}
+    snap install "${DEFAULT_SNAP_PACKAGES_INSTALL}"
 fi
 
 if [[ $DEFAULT_SNAP_PACKAGES_INSTALL =~ "shellcheck" ]]; then
