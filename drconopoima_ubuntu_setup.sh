@@ -19,7 +19,7 @@ set -Eeuo pipefail
 # * Tom Van Eyck: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 
 readonly SCRIPT_NAME="$0"
-readonly SCRIPT_VERSION='1.1.0'
+readonly SCRIPT_VERSION='1.1.1'
 
 script_name() {
     printf "${SCRIPT_NAME}: (v${SCRIPT_VERSION})\n"
@@ -49,7 +49,7 @@ xfsdump sshpass linux-tools-generic wireshark ethtool tshark perf-tools-unstable
 bpfcc-tools sshpass pssh cgroup-tools pass"
 
 readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="rustup go aws-cli google-cloud-cli"
-readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck yq libreoffice k6"
+readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck yq libreoffice k6 chromium"
 readonly DEFAULT_FLATPAK_PACKAGES_INSTALL=""
 
 DEFAULT_PACKAGES_TO_REMOVE="gstreamer1.0-fluendo-mp3 telnetd"
@@ -85,6 +85,8 @@ help_text() {
     printf "    --calibre: Install Calibre EBook Reading Software.\n"
     printf "    --pyenv: Install Pyenv Python Version Management by using project pyenv-installer.\n"
     printf "    --user: Select user for configuration\n"
+    printf "    --crystal: Install crystal programming language\n"
+    printf "    --widevine: Install widevine DRM library for Chromium Browser (add Chromium to snap package list)\n"
 }
 
 readonly -f help_text
@@ -121,7 +123,7 @@ fi
 
 readonly REST_ARGUMENTS=("${ALL_ARGUMENTS[@]:1}")
 
-CONSTANTS=('GOOGLE_CHROME' 'VSCODE' 'VSCODE_INSIDERS' 'INSTALL_PYTHON_PIP' 'LOCAL_PIP' 'PYTHON_USER' 'INSTALL_GIT' 'GIT_USER_NAME' 'GIT_USER_EMAIL' 'REMOVE_GLOBAL_PIP' 'INSTALL_UFW' 'NEW_SSH_PORT' 'VALIDATE_SSH_PORT' 'DOCKER_CE' 'CALIBRE' 'pyenv')
+CONSTANTS=('GOOGLE_CHROME' 'VSCODE' 'VSCODE_INSIDERS' 'INSTALL_PYTHON_PIP' 'LOCAL_PIP' 'PYTHON_USER' 'INSTALL_GIT' 'GIT_USER_NAME' 'GIT_USER_EMAIL' 'REMOVE_GLOBAL_PIP' 'INSTALL_UFW' 'NEW_SSH_PORT' 'VALIDATE_SSH_PORT' 'DOCKER_CE' 'CALIBRE' 'pyenv' 'USERNAME' 'CRYSTAL' 'WIDEVINE')
 
 skip_argument=0
 if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
@@ -256,6 +258,15 @@ if [[ "${NUMBER_OF_ARGUMENTS}" -gt 1 ]]; then
                 shift
                 USERNAME="$2"
                 skip_argument=1
+                ;;            
+            --crystal)
+                CRYSTAL=1
+                shift
+                ;;
+            
+            --widevine)
+                WIDEVINE=1
+                shift
                 ;;
             *)
                 echo "Error: unrecognized option ${argument#*=}"
@@ -322,8 +333,8 @@ if [[ -n ${INSTALL_UFW+x} ]]; then
     packages_to_install+=('ufw')
 fi
 
-if [[ -n ${VSCODE+x} || -n ${VSCODE_INSIDERS+x} || -n ${DOCKER_CE+x} || -n ${GOOGLE_CHROME+x} || -n ${CALIBRE+x} ]]; then
-    packages_to_install+=('curl coreutils apt-transport-https ca-certificates wget gnupg-agent software-properties-common xdg-utils xz-utils' 'tk-dev')
+if [[ -n ${VSCODE+x} || -n ${VSCODE_INSIDERS+x} || -n ${DOCKER_CE+x} || -n ${GOOGLE_CHROME+x} || -n ${CALIBRE+x} || -n ${WIDEVINE} || -n ${CRYSTAL} ]]; then
+    packages_to_install+=('curl coreutils apt-transport-https ca-certificates wget gnupg-agent software-properties-common xdg-utils xz-utils tk-dev')
 fi
 
 add-apt-repository universe
@@ -466,6 +477,27 @@ if [[ -n ${PYENV+x} ]]; then
     curl -s -S -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash -e
 fi
 
+if [[ -n ${CRYSTAL+x} ]]; then
+    # Download GPG Key from OpenSuse.org
+    curl -fsSL https://download.opensuse.org/repositories/devel:languages:crystal/xUbuntu_22.04/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/archive_uri-https_download-opensuse-org_repositories_devel-languages-crystal_xUbuntu_22-04_Release-key.gpg > /dev/null
+    # Add repository
+    echo 'deb http://download.opensuse.org/repositories/devel:/languages:/crystal/xUbuntu_22.04/ /' | sudo tee /etc/apt/sources.list.d/archive_uri-https_download-opensuse-org_repositories_devel-languages-crystal_xUbuntu_22-04_Release-key.list
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y crystal
+fi
+
+if [[ -n ${WIDEVINE+x} ]]; then
+    # Get current version
+    WIDEVINE_VERSION="$(curl -fsSL https://dl.google.com/widevine-cdm/current.txt)"
+    readonly WIDEVINE_VERSION
+    # Create chromium Library extensions folder
+    mkdir -pv /usr/lib/chromium
+    chmod -v 755 /usr/lib/chromium
+    # Download Widevine SO
+    wget -nv "https://dl.google.com/widevine-cdm/${WIDEVINE_VERSION}-linux-x64.zip" | busybox unzip -jo "${WIDEVINE_VERSION}-linux-x64.zip" libwidevinecdm.so -d /usr/lib/chromium/
+    chmod -v 644 /usr/lib/chromium/libwidevinecdm.so
+fi
+
 DEBIAN_FRONTEND=noninteractive apt-get remove -y ${packages_to_remove[@]}
 
 ### setxkbmap
@@ -493,14 +525,15 @@ if [[ -n ${USERNAME+x} ]]; then
     chown $USERNAME:$USERNAME "${HOMEDIR_USER}/.profile"
 fi
 
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-if [[ -n ${USERNAME+x} ]]; then
-    sudo -u ${USERNAME} flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-    sudo -u ${USERNAME} flatpak install -y --user ${DEFAULT_FLATPAK_PACKAGES_INSTALL}
-fi
-if [[ -n ${DEFAULT_FLATPAK_PACKAGES_INSTALL} ]]; then
-    flatpak install -y ${DEFAULT_FLATPAK_PACKAGES_INSTALL}
-fi
+if 
+    flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    if [[ -n ${USERNAME+x} ]]; then
+        sudo -u ${USERNAME} flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+        sudo -u ${USERNAME} flatpak install -y --user ${DEFAULT_FLATPAK_PACKAGES_INSTALL}
+    fi
+    if [[ -n ${DEFAULT_FLATPAK_PACKAGES_INSTALL} ]]; then
+        flatpak install -y ${DEFAULT_FLATPAK_PACKAGES_INSTALL}
+    fi
 
 if [[ -n ${DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC} ]]; then
     snap install --classic ${DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC}
