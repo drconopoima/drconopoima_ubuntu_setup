@@ -306,7 +306,7 @@ if [[ -n ${VALIDATE_SSH_PORT+x} ]]; then
 fi
 
 if [[ -n ${INSTALL_PYTHON_PIP+x} ]]; then
-    if [[ "${ubuntu_version}" =~ "20.04" ]]; then
+    if [[ "${ubuntu_version}" =~ "2[02].04" ]]; then
         packages_to_install+=('python2' 'python3-pip' 'python3-venv')
     else
         packages_to_install+=('python-pip' 'python3-pip' 'python3-venv')
@@ -322,7 +322,7 @@ if [[ -n ${PYENV+x} ]]; then
 fi
 
 if [[ -n ${REMOVE_GLOBAL_PIP+x} ]]; then
-    if [[ "${ubuntu_version}" -eq "20.04" ]]; then
+    if [[ "${ubuntu_version}" =~ "2[02].04" ]]; then
         packages_to_remove+=('python3-pip')
     else
         packages_to_remove+=('python-pip' 'python3-pip')
@@ -479,9 +479,9 @@ fi
 
 if [[ -n ${CRYSTAL+x} ]]; then
     # Download GPG Key from OpenSuse.org
-    curl -fsSL https://download.opensuse.org/repositories/devel:languages:crystal/xUbuntu_22.04/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/archive_uri-https_download-opensuse-org_repositories_devel-languages-crystal_xUbuntu_22-04_Release-key.gpg > /dev/null
+    curl -fsSL "https://download.opensuse.org/repositories/devel:languages:crystal/xUbuntu_$(lsb_release -rs)/Release.key" | gpg --dearmor | tee /etc/apt/trusted.gpg.d/archive_uri-https_download-opensuse-org_repositories_devel-languages-crystal_xUbuntu_$(lsb_release -rs | tr '.' '-')_Release-key.gpg > /dev/null
     # Add repository
-    echo 'deb http://download.opensuse.org/repositories/devel:/languages:/crystal/xUbuntu_22.04/ /' | sudo tee /etc/apt/sources.list.d/archive_uri-https_download-opensuse-org_repositories_devel-languages-crystal_xUbuntu_22-04_Release-key.list
+    echo "deb http://download.opensuse.org/repositories/devel:/languages:/crystal/xUbuntu_$(lsb_release -rs)/ /" | sudo tee /etc/apt/sources.list.d/archive_uri-https_download-opensuse-org_repositories_devel-languages-crystal_xUbuntu_$(lsb_release -rs | tr '.' '-').list
     apt-get update
     DEBIAN_FRONTEND=noninteractive apt-get install -y crystal
 fi
