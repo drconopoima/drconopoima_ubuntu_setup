@@ -39,7 +39,7 @@ plasma-workspace-wallpapers coreutils apt-file telnet openssh-client \
 openssh-server gpg net-tools exfat-fuse jq tmux maven sqlite3 \
 lsof colormake most nocache jpegoptim mmv qpdf rename postgresql \
 asciinema fail2ban dsniff ecryptfs-utils cryptsetup mariadb-server mariadb-client \
-zsh autojump dolphin-plugins postgresql-contrib \
+zsh autojump dolphin-plugins postgresql-contrib innoextract \
 bc module-assistant tldr fd-find imagemagick source-highlight \
 command-not-found tree ncdu fzf aptitude p7zip-full python3-docutils traceroute \
 iproute2 htop gddrescue libipmimonitoring-dev libjson-c-dev libmongoc-dev \
