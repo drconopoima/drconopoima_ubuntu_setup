@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# drconopoima_ubuntu_setup (v0.9.0)
+# drconopoima_ubuntu_setup (v1.2.1)
 # Quick from scratch setup script of an Ubuntu machine
 # Optional Dependency: Auxiliary vimrc/bashrc/bash_aliases accompanying files
 # set -n
