@@ -51,7 +51,7 @@ kdenlive rbenv"
 
 readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="rustup go aws-cli google-cloud-cli"
 readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck yq libreoffice k6 chromium"
-readonly DEFAULT_FLATPAK_PACKAGES_INSTALL=""
+readonly DEFAULT_FLATPAK_PACKAGES_INSTALL="com.heroicgameslauncher.hgl"
 
 DEFAULT_PACKAGES_TO_REMOVE="gstreamer1.0-fluendo-mp3 telnetd"
 
