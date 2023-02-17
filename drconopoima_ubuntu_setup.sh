@@ -47,7 +47,7 @@ libsnappy-dev libprotobuf-dev libprotoc-dev protobuf-compiler libnfnetlink-dev \
 libnetfilter-acct-dev uuid-dev gcc autoconf automake pkg-config smartmontools \
 xfsdump sshpass linux-tools-generic wireshark ethtool tshark perf-tools-unstable \
 bpfcc-tools sshpass pssh cgroup-tools pass libimage-exiftool-perl default-jre default-jdk \
-kdenlive rbenv stress-ng"
+kdenlive rbenv stress-ng glmark2"
 
 readonly DEFAULT_SNAP_PACKAGES_INSTALL_CLASSIC="rustup go aws-cli google-cloud-cli"
 readonly DEFAULT_SNAP_PACKAGES_INSTALL="shellcheck yq libreoffice k6 chromium"
